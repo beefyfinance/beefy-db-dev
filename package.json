@@ -4,10 +4,9 @@
   "license": "gpl-3.0",
   "private": true,
   "dependencies": {
-    "ethers": "^5.3.0",
     "loglevel": "^1.7.1"
   },
   "scripts": {
-    "main": "rm db/lock; node src/main"
+    "main": "mkdir -p db; rm db/lock; node src/main"
   }
 }

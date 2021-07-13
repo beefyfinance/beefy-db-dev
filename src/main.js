@@ -1,8 +1,11 @@
 const { existsSync, writeFileSync, unlinkSync, readFileSync } = require('fs');
 
-const { log } = require('./log');
 const { LOCK_FILE } = require('./constants');
-const { FETCH_INTERVAL } = require('./cfg');
+const { FETCH_INTERVAL, ERROR_INTERVAL } = require('./cfg');
+
+const { log } = require('./log');
+const { sleep } = require('./utils');
+const { fetchTvl, fetchApy, fetchPrice } = require('./fetch');
 
 let running = true;
 
@@ -24,12 +27,18 @@ async function main () {
       const [tvl, apy, price] = Promise.all([
         fetchTvl(), fetchApy(), fetchPrice()
       ]);
+
+      // TODO: store data
+      console.log('TVL');
+      console.log(tvl);
+      running = false;
+
       await sleep(FETCH_INTERVAL);
     }
     
   } catch (err) {
     log.error(err);
-    throw err;
+    await sleep(ERROR_INTERVAL);
   }  
 
   if (existsSync(LOCK_FILE)) {
@@ -41,7 +50,7 @@ async function main () {
 
 process.stdin.resume();
 process.on('SIGINT', function() {
-  log.info('SIGINT');
+  log.info('SIGINT received');
   running = false;
 });
 

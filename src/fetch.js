@@ -1,3 +1,4 @@
+const { log } = require('./log');
 
 async function fetchTvl () {
   log.info(`fetching tvl`);
@@ -17,7 +18,8 @@ async function fetchPrice () {
   return {};
 }
 
-
 module.exports = { 
-  fetchTvl
+  fetchTvl,
+  fetchApy,
+  fetchPrice
 }
