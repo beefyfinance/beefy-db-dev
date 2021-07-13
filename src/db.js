@@ -25,36 +25,41 @@ async function migrate () {
     id SERIAL,
     t TIMESTAMP NOT NULL,
     name VARCHAR(64) NOT NULL, 
-    val DOUBLE NOT NULL,
+    val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
   
   CREATE TABLE IF NOT EXISTS prices (
     id SERIAL,
     t TIMESTAMP NOT NULL,
     name VARCHAR(64) NOT NULL, 
-    val DOUBLE NOT NULL,
+    val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
   
   CREATE TABLE IF NOT EXISTS tvls (
     id SERIAL,
     t TIMESTAMP NOT NULL,
+    chain INTEGER NOT NULL,
     name VARCHAR(64) NOT NULL, 
-    val DOUBLE NOT NULL,
+    val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
 
-  CREATE INDEX IF NOT EXISTS ON apys (t);
-  CREATE INDEX IF NOT EXISTS ON prices (t);
-  CREATE INDEX IF NOT EXISTS ON tvls (t);
+    CREATE INDEX IF NOT EXISTS apys_t_idx ON apys (t);
+    CREATE INDEX IF NOT EXISTS prices_t_idx ON prices (t);
+    CREATE INDEX IF NOT EXISTS tvls_t_idx ON tvls (t);
+    CREATE INDEX IF NOT EXISTS tvls_chain_idx ON tvls (chain);
   `
   )
 }
 
+
 async function insert (table, t, names, values) {
   log.info(`insert into ${table}`);
+  // TODO: batch insert
 }
 
 async function query (table) {
   log.info(`query price`);
+  // TODO: define filters
 }
 
 module.exports = {
