@@ -18,9 +18,9 @@ async function main () {
       process.exit(-1);
     }
 
-    log.debug('locking mutex');
+    log.debug('locking db');
     writeFileSync(LOCK_FILE, Date.now().toString());
-    log.debug('mutex locked');
+    log.debug('db locked');
 
     // TODO: launch this as a thread
     while (running) {
@@ -29,8 +29,8 @@ async function main () {
       ]);
 
       // TODO: store data
-      console.log('TVL');
-      console.log(tvl);
+      log.log('TVL');
+      log.log(tvl);
       running = false;
 
       await sleep(FETCH_INTERVAL);
@@ -42,13 +42,12 @@ async function main () {
   }  
 
   if (existsSync(LOCK_FILE)) {
-    log.debug('unlocking mutex');
+    log.debug('unlocking db');
     unlinkSync(LOCK_FILE);
-    log.debug('mutex unlocked');
+    log.debug('db unlocked');
   }
 }
 
-process.stdin.resume();
 process.on('SIGINT', function() {
   log.info('SIGINT received');
   running = false;
