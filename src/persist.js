@@ -1,13 +1,18 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
 
 const { log } = require('./log');
 
-let client;
+let pool;
 
 async function connectDb ()  {
   log.info(`connecting database`);
-  client = new Client();
-  await client.connect();
+  pool = new Pool();
+  
+  pool.query('SELECT NOW()', (err, res) => {
+    console.log(err, res)
+    pool.end()
+  });
+
   log.info(`database connected`);
 }
 
