@@ -1,18 +1,20 @@
 const { Pool } = require('pg');
+const pgcs = require('pg-connection-string');
 
+const { DATABASE_URL } = require('./cfg');
 const { log } = require('./log');
 
 let pool;
 
-async function connectDb ()  {
+async function connect ()  {
   log.info(`connecting database`);
-  pool = new Pool();
-  
-  pool.query('SELECT NOW()', (err, res) => {
-    console.log(err, res)
-    pool.end()
-  });
 
+  // FIXME: self signed certs workaround
+  // https://node-postgres.com/announcements#2020-02-25
+  const config = pgcs.parse(DATABASE_URL);
+  config.ssl = { rejectUnauthorized: false };
+  pool = new Pool(config);
+  
   log.info(`database connected`);
 }
 
@@ -29,7 +31,7 @@ async function persistTvl (tvl, t) {
 }
 
 module.exports = {
-  connectDb,
+  connect,
   persistApy,
   persistPrice,
   persistTvl,
