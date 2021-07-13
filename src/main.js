@@ -48,9 +48,4 @@ async function main () {
   }
 }
 
-process.on('SIGINT', function() {
-  log.info('SIGINT received');
-  running = false;
-});
-
 main();
