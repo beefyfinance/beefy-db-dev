@@ -2,6 +2,9 @@ const { existsSync, writeFileSync, unlinkSync, readFileSync } = require('fs');
 
 const { log } = require('./log');
 const { LOCK_FILE } = require('./constants');
+const { FETCH_INTERVAL } = require('./cfg');
+
+let running = true;
 
 async function main () {
   log.info('beefy-db start');
@@ -16,13 +19,14 @@ async function main () {
     writeFileSync(LOCK_FILE, Date.now().toString());
     log.debug('mutex locked');
 
-    // fetch TVL
-    // fetch APY
-    // fetch prices
-    // persist data
-    // sleep
-    // loop
-
+    // TODO: launch this as a thread
+    while (running) {
+      const [tvl, apy, price] = Promise.all([
+        fetchTvl(), fetchApy(), fetchPrice()
+      ]);
+      await sleep(FETCH_INTERVAL);
+    }
+    
   } catch (err) {
     log.error(err);
     throw err;
@@ -34,5 +38,11 @@ async function main () {
     log.debug('mutex unlocked');
   }
 }
+
+process.stdin.resume();
+process.on('SIGINT', function() {
+  log.info('SIGINT');
+  running = false;
+});
 
 main();

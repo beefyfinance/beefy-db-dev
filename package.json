@@ -8,6 +8,6 @@
     "loglevel": "^1.7.1"
   },
   "scripts": {
-    "snap": "rm cache/lock; node src/snap"
+    "main": "rm db/lock; node src/main"
   }
 }
