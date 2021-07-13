@@ -5,7 +5,8 @@
   "private": true,
   "dependencies": {
     "axios": "^0.21.1",
-    "loglevel": "^1.7.1"
+    "loglevel": "^1.7.1",
+    "pg": "^8.6.0"
   },
   "scripts": {
     "main": "mkdir -p db; rm db/lock; node src/main"
