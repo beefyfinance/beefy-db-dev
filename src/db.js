@@ -18,21 +18,48 @@ async function connect ()  {
   log.info(`database connected`);
 }
 
-async function persistApy (apy, t) {
-  log.info(`persisting apy`);
+// FIXME: use a migrations system (or just IPFS db)
+async function migrate () {
+  await pool.query(
+  `CREATE TABLE IF NOT EXISTS apys (
+    id SERIAL,
+    t TIMESTAMP NOT NULL,
+    name VARCHAR(64) NOT NULL, 
+    val DOUBLE NOT NULL,
+    PRIMARY KEY (id));
+  
+  CREATE TABLE IF NOT EXISTS prices (
+    id SERIAL,
+    t TIMESTAMP NOT NULL,
+    name VARCHAR(64) NOT NULL, 
+    val DOUBLE NOT NULL,
+    PRIMARY KEY (id));
+  
+  CREATE TABLE IF NOT EXISTS tvls (
+    id SERIAL,
+    t TIMESTAMP NOT NULL,
+    name VARCHAR(64) NOT NULL, 
+    val DOUBLE NOT NULL,
+    PRIMARY KEY (id));
+
+  CREATE INDEX IF NOT EXISTS ON apys (t);
+  CREATE INDEX IF NOT EXISTS ON prices (t);
+  CREATE INDEX IF NOT EXISTS ON tvls (t);
+  `
+  )
 }
 
-async function persistPrice (price, t) {
-  log.info(`persisting price`);
+async function insert (table, t, names, values) {
+  log.info(`insert into ${table}`);
 }
 
-async function persistTvl (tvl, t) {
-  log.info(`persisting tvl`);
+async function query (table) {
+  log.info(`query price`);
 }
 
 module.exports = {
   connect,
-  persistApy,
-  persistPrice,
-  persistTvl,
+  migrate,
+  insert,
+  query,
 }

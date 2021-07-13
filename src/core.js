@@ -7,9 +7,7 @@ const db = require('./db');
 async function init () {
   log.info(`updating data`);
   await db.connect();
-
-  // Create tables if they don't exist
-
+  await db.migrate();
 }
 
 async function update () {
