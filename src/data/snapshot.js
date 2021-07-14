@@ -1,9 +1,9 @@
 const { existsSync, writeFileSync, readFileSync } = require('fs');
 
-const { HOUR, HOUR_IN_MILLIS, SNAP_FILE } = require('./constants');
-const { UPDATE_INTERVAL } = require('./cfg');
+const { HOUR, HOUR_IN_MILLIS, SNAP_FILE } = require('../utils/constants');
+const { UPDATE_INTERVAL } = require('../utils/cfg');
+const { log } = require('../utils/log');
 
-const { log } = require('./log');
 const db = require('./db');
 const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
 const { transformApy, transformPrice, transformTvl } = require('./transform');

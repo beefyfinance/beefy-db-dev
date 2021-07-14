@@ -2,8 +2,8 @@ const { Pool } = require('pg');
 const pgcs = require('pg-connection-string');
 const pgf = require('pg-format');
 
-const { DATABASE_URL } = require('./cfg');
-const { log } = require('./log');
+const { DATABASE_URL } = require('../utils/cfg');
+const { log } = require('../utils/log');
 
 let pool;
 

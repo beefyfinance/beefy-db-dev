@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const { log } = require('./log');
+const { log } = require('../utils/log');
 
 const BASE_URL = "https://api.beefy.finance";
 

@@ -1,9 +1,10 @@
 const { existsSync, writeFileSync, unlinkSync } = require('fs');
 
-const { LOCK_FILE } = require('./constants');
-const { log } = require('./log');
-const { sleep } = require('./utils');
-const { init, update } = require('./core');
+const { LOCK_FILE } = require('./utils/constants');
+const { log } = require('./utils/log');
+const { sleep } = require('./utils/utils');
+const snapshot = require('./data/snapshot');
+const api = require('./api/api');
 
 async function main () {
   log.info('beefy-db start');
@@ -18,12 +19,14 @@ async function main () {
     writeFileSync(LOCK_FILE, Date.now().toString());
     log.debug('db locked');
 
-    await init();
-    setTimeout(update, 1000);
+    log.debug('initializing');
+    await snapshot.init();
+    await api.init();
 
-    // TODO: start API endpoint
-    await sleep(10 * 60 * 1000);
-    
+    log.debug('listening');
+    setTimeout(snapshot.update, 1000);
+    api.listen();
+
   } catch (err) {
     log.error(err);
     throw err;

@@ -1,4 +1,4 @@
-const { log } = require('./log');
+const { log } = require('../utils/log');
 
 function transformApy (data, t) {
   log.info(`transforming apy`);
