@@ -18,6 +18,6 @@
     "pg-format": "^1.0.4"
   },
   "scripts": {
-    "main": "mkdir -p db; rm db/lock; node -r dotenv/config src/main"
+    "start": "mkdir -p db; rm db/lock; node -r dotenv/config src/main"
   }
 }
