@@ -30,12 +30,6 @@ async function main () {
     log.error(err);
     throw err;
   }
-
-  if (existsSync(LOCK_FILE)) {
-    log.debug('unlocking db');
-    unlinkSync(LOCK_FILE);
-    log.debug('db unlocked');
-  }
 }
 
 main();
