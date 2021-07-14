@@ -2,7 +2,6 @@ const { existsSync, writeFileSync, unlinkSync } = require('fs');
 
 const { LOCK_FILE } = require('./utils/constants');
 const { log } = require('./utils/log');
-const { sleep } = require('./utils/utils');
 const snapshot = require('./data/snapshot');
 const api = require('./api/api');
 
@@ -19,11 +18,11 @@ async function main () {
     writeFileSync(LOCK_FILE, Date.now().toString());
     log.debug('db locked');
 
-    log.debug('initializing');
+    log.info('initializing modules');
     await snapshot.init();
     await api.init();
 
-    log.debug('listening');
+    log.info('modules ready');
     setTimeout(snapshot.update, 1000);
     api.listen();
 
