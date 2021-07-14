@@ -8,7 +8,8 @@
     "dotenv": "^10.0.0",
     "loglevel": "^1.7.1",
     "pg": "^8.6.0",
-    "pg-connection-string": "^2.5.0"
+    "pg-connection-string": "^2.5.0",
+    "pg-format": "^1.0.4"
   },
   "scripts": {
     "main": "mkdir -p db; rm db/lock; node -r dotenv/config src/main"

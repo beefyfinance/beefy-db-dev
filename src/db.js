@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const pgcs = require('pg-connection-string');
+const pgf = require('pg-format');
 
 const { DATABASE_URL } = require('./cfg');
 const { log } = require('./log');
@@ -23,21 +24,21 @@ async function migrate () {
   await pool.query(
   `CREATE TABLE IF NOT EXISTS apys (
     id SERIAL,
-    t TIMESTAMP NOT NULL,
+    t BIGINT NOT NULL,
     name VARCHAR(64) NOT NULL, 
     val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
   
   CREATE TABLE IF NOT EXISTS prices (
     id SERIAL,
-    t TIMESTAMP NOT NULL,
+    t BIGINT NOT NULL,
     name VARCHAR(64) NOT NULL, 
     val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
   
   CREATE TABLE IF NOT EXISTS tvls (
     id SERIAL,
-    t TIMESTAMP NOT NULL,
+    t BIGINT NOT NULL,
     name VARCHAR(64) NOT NULL, 
     val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
@@ -53,11 +54,12 @@ async function migrate () {
   )
 }
 
-async function insert (table, t, values) {
+async function insert (table, values) {
   log.info(`insert into ${table}`);
-
-  console.log(values);
-  // TODO: batch insert
+  
+  const insert = pgf('INSERT INTO %s (t, name, val) VALUES %L', table, values); 
+  console.log(insert);
+  return pool.query(insert);
 }
 
 async function query (table) {

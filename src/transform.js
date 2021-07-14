@@ -1,32 +1,32 @@
 const { log } = require('./log');
 
-async function transformApy (data) {
+function transformApy (data, t) {
   log.info(`transforming apy`);
 
   const results = [];
   for (const name in data) {
     const val = data[name].totalApy;
     if (!val) { continue; }
-    results.push([name, val]);
+    results.push([t, name, val]);
   }
 
   return results;
 }
 
-async function transformPrice (data) {
+function transformPrice (data, t) {
   log.info(`transforming price`);
   
   const results = [];
   for (const name in data) {
-    const val = data[name].totalApy;
+    const val = data[name];
     if (!val) { continue; }
-    results.push([name, val]);
+    results.push([t, name, val]);
   }
   
   return results;
 }
 
-async function transformTvl (data) {
+function transformTvl (data, t) {
   log.info(`transforming tvl`);
 
   const results = [];
@@ -34,11 +34,11 @@ async function transformTvl (data) {
     for (const name in data[chain]) {
       const val = data[chain][name];
       if (!val) { continue; }
-      results.push([`${name}-${chain}`, val]);
+      results.push([t, `${name}-${chain}`, val]);
     }
   }
 
-  return [];
+  return results;
 }
 
 module.exports = {

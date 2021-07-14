@@ -5,6 +5,9 @@ const db = require('./db');
 const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
 const { transformApy, transformPrice, transformTvl } = require('./transform');
 
+const HOUR = 60 * 60;
+const HOUR_IN_MILLIS = HOUR * 1000;
+
 async function init () {
   log.info(`updating data`);
   await db.connect();
@@ -14,7 +17,7 @@ async function init () {
 async function update () {
   log.info(`updating snapshot`);
   try {
-    const t = Math.floor(Date.now() / (60 * 60 * 1000));
+    const t = Math.floor(Date.now() / HOUR_IN_MILLIS) * HOUR;
     const [apy, price, tvl] = await Promise.all([
       fetchApy(t),
       fetchPrice(t),
@@ -22,10 +25,12 @@ async function update () {
     ]);
 
     await Promise.all([
-      db.insert("apys", t, transformApy(apy.data || {})),
-      db.insert("prices", t, transformPrice(price.data || {})),
-      db.insert("tvls", t, transformTvl(tvl.data || {})), 
+      db.insert("apys", transformApy(apy.data || {}, t)),
+      db.insert("prices", transformPrice(price.data || {}, t)),
+      db.insert("tvls", transformTvl(tvl.data || {}, t)), 
     ]);
+
+    process.exit();
   
     setTimeout(update, UPDATE_INTERVAL);
 
