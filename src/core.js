@@ -1,12 +1,10 @@
+const { HOUR, HOUR_IN_MILLIS} = require('./constants');
 const { UPDATE_INTERVAL, ERROR_INTERVAL } = require('./cfg');
 
 const { log } = require('./log');
 const db = require('./db');
 const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
 const { transformApy, transformPrice, transformTvl } = require('./transform');
-
-const HOUR = 60 * 60;
-const HOUR_IN_MILLIS = HOUR * 1000;
 
 async function init () {
   log.info(`updating data`);
@@ -30,8 +28,6 @@ async function update () {
       db.insert("tvls", transformTvl(tvl.data || {}, t)), 
     ]);
 
-    process.exit();
-  
     setTimeout(update, UPDATE_INTERVAL);
 
   } catch (err) {

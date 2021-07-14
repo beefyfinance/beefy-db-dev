@@ -1,4 +1,4 @@
-const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 10 * 1000;
+const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 15 * 60 * 1000;
 const ERROR_INTERVAL = process.env.ERROR_INTERVAL || 60 * 1000;
 const DATABASE_URL = process.env.DATABASE_URL;
 

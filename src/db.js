@@ -55,10 +55,8 @@ async function migrate () {
 }
 
 async function insert (table, values) {
-  log.info(`insert into ${table}`);
-  
+  log.info(`insert into ${table}`);  
   const insert = pgf('INSERT INTO %s (t, name, val) VALUES %L', table, values); 
-  console.log(insert);
   return pool.query(insert);
 }
 
