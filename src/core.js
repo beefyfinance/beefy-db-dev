@@ -1,8 +1,9 @@
 const { UPDATE_INTERVAL, ERROR_INTERVAL } = require('./cfg');
 
 const { log } = require('./log');
-const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
 const db = require('./db');
+const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
+const { transformApy, transformPrice, transformTvl } = require('./transform');
 
 async function init () {
   log.info(`updating data`);
@@ -21,9 +22,9 @@ async function update () {
     ]);
 
     await Promise.all([
-      db.persistApy(apy, t),
-      db.persistPrice(price, t),
-      db.persistTvl(tvl, t), 
+      db.insert("apys", t, transformApy(apy.data || {})),
+      db.insert("prices", t, transformPrice(price.data || {})),
+      db.insert("tvls", t, transformTvl(tvl.data || {})), 
     ]);
   
     setTimeout(update, UPDATE_INTERVAL);

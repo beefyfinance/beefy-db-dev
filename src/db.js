@@ -18,7 +18,7 @@ async function connect ()  {
   log.info(`database connected`);
 }
 
-// FIXME: use a migrations system (or just IPFS db)
+// FIXME: use a migrations system? (or just IPFS db??)
 async function migrate () {
   await pool.query(
   `CREATE TABLE IF NOT EXISTS apys (
@@ -38,22 +38,25 @@ async function migrate () {
   CREATE TABLE IF NOT EXISTS tvls (
     id SERIAL,
     t TIMESTAMP NOT NULL,
-    chain INTEGER NOT NULL,
     name VARCHAR(64) NOT NULL, 
     val DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (id));
 
-    CREATE INDEX IF NOT EXISTS apys_t_idx ON apys (t);
-    CREATE INDEX IF NOT EXISTS prices_t_idx ON prices (t);
-    CREATE INDEX IF NOT EXISTS tvls_t_idx ON tvls (t);
-    CREATE INDEX IF NOT EXISTS tvls_chain_idx ON tvls (chain);
+  CREATE INDEX IF NOT EXISTS apys_t_idx ON apys (t);
+  CREATE INDEX IF NOT EXISTS prices_t_idx ON prices (t);
+  CREATE INDEX IF NOT EXISTS tvls_t_idx ON tvls (t);
+
+  CREATE INDEX IF NOT EXISTS apys_name_idx ON apys (name);
+  CREATE INDEX IF NOT EXISTS prices_name_idx ON prices (name);
+  CREATE INDEX IF NOT EXISTS tvls_name_idx ON tvls (name);
   `
   )
 }
 
-
-async function insert (table, t, names, values) {
+async function insert (table, t, values) {
   log.info(`insert into ${table}`);
+
+  console.log(values);
   // TODO: batch insert
 }
 
