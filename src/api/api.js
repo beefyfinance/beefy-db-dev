@@ -4,11 +4,11 @@ const cors = require('@koa/cors');
 const conditional = require('koa-conditional-get');
 const etag = require('koa-etag');
 
-const rt = require('./rt');
-const powered = require('./powered');
-const router = require('./router');
-
+const rt = require('../middleware/rt');
+const powered = require('../middleware/powered');
 const { log } = require('../utils/log');
+
+const router = require('./router');
 
 let api;
 function init () {
