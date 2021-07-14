@@ -34,7 +34,7 @@ async function transformTvl (data) {
     for (const name in data[chain]) {
       const val = data[chain][name];
       if (!val) { continue; }
-      results.push([`${chain}-${name}`, val]);
+      results.push([`${name}-${chain}`, val]);
     }
   }
 
