@@ -40,10 +40,7 @@ function hasSnapshot (t) {
 
   log.debug(`snapshot found`);
   const last = Number(readFileSync(SNAP_FILE));
-  console.log(last, last === t);
-
-  return last === t;  
-
+  return last === t;
 }
 
 async function snapshot (t) {
