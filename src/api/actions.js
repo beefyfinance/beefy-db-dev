@@ -1,5 +1,7 @@
-const { log } = require('../utils/log');
 const db = require('../data/db');
+
+// FIXME: make this dynamic. name can safely be ignored, since you always know what you are asking for
+const COLUMNS = "t, name, val";
 
 function buildFilter (q) {
   const filter = {}
@@ -26,7 +28,7 @@ async function apy (ctx) {
   ctx.body = await execQuery({ 
     ctx,
     table: "apys",
-    columns: "t, name, val",
+    columns: COLUMNS,
   });
 }
 
@@ -34,7 +36,7 @@ async function price (ctx) {
   ctx.body = await execQuery({ 
     ctx,
     table: "prices",
-    columns: "t, name, val",
+    columns: COLUMNS,
   });
 }
 
@@ -42,7 +44,7 @@ async function tvl (ctx) {
   ctx.body = await execQuery({ 
     ctx,
     table: "tvls",
-    columns: "t, name, val",
+    columns: COLUMNS,
   });
 }
 
