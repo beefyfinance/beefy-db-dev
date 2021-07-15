@@ -19,7 +19,8 @@ async function main () {
     log.debug('db locked');
 
     log.info('initializing modules');
-    await snapshot.init();
+    // FIXME: tmp disable
+    // await snapshot.init();
     await api.init();
 
     log.info('modules ready');
