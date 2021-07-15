@@ -18,6 +18,8 @@ async function update () {
   log.info(`updating snapshot`);
   
   try {
+    // IMPORTANT: This line defines the snapshot frequency
+    // it probably needs to be improved, but should work for v0.1
     const t = Math.floor(Date.now() / HOUR_IN_MILLIS) * HOUR;
     if (!hasSnapshot(t)){
       await snapshot(t);

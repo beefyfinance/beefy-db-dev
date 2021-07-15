@@ -23,8 +23,7 @@ async function main () {
     await api.init();
     
     log.info('modules ready');
-    // FIXME: tmp disable
-    // setTimeout(snapshot.update, 1000);
+    setTimeout(snapshot.update, 1000);
     api.listen();
 
   } catch (err) {
