@@ -56,13 +56,14 @@ async function migrate () {
 
 async function insert (table, values) {
   log.info(`insert into ${table}`);  
-  const insert = pgf('INSERT INTO %s (t, name, val) VALUES %L', table, values); 
+  const insert = pgf('INSERT INTO %s (t, name, val) VALUES %L', table, values);
   return pool.query(insert);
 }
 
-async function query (table) {
+async function query ({ table, columns }) {
   log.info(`query price`);
-  // TODO: define filters
+  const q = pgf('SELECT %s FROM %s', columns, table);
+  return pool.query(q);
 }
 
 module.exports = {

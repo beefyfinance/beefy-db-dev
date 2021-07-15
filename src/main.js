@@ -19,12 +19,12 @@ async function main () {
     log.debug('db locked');
 
     log.info('initializing modules');
-    // FIXME: tmp disable
-    // await snapshot.init();
+    await snapshot.init();
     await api.init();
-
+    
     log.info('modules ready');
-    setTimeout(snapshot.update, 1000);
+    // FIXME: tmp disable
+    // setTimeout(snapshot.update, 1000);
     api.listen();
 
   } catch (err) {
