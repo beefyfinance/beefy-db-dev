@@ -4,6 +4,12 @@ EXTREMELY QUICK AND DIRTY REPO.
 
 CLEANUP AND MIGRATE BEFORE OPEN SOURCING!!! SRSLY
 
+## TL;DR
+
+https://beefy-db.herokuapp.com/apy?name=bifi-maxi&from=1626336000&to=1626339600
+
+## Overview
+
 This app is composed of 2 simple modules:
 1. `data` periodically fetches info from the api and stores it in a database
 2. `api` basic koa server that allows us to query the stored data
