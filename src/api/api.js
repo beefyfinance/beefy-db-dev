@@ -14,8 +14,8 @@ let api;
 function init () {
   api = new Koa();
 
-  api.use(middleware.rt);
   api.use(middleware.logger);
+  api.use(middleware.rt);
   api.use(middleware.powered);
 
   api.use(conditional());
