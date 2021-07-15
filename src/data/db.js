@@ -66,7 +66,7 @@ async function query ({ table, columns, filter, group}) {
   const q = [pgf('SELECT %s FROM %s', columns, table)];
 
   // TODO: use knex? or a proper minimalist query builder
-  if (filter) {
+  if (filter && Object.keys(filter).length > 0) {
     q.push('WHERE');
 
     if (filter.name) {
@@ -81,7 +81,7 @@ async function query ({ table, columns, filter, group}) {
       q.push(pgf('t BETWEEN %L AND %L', filter.from, filter.to));
     }
   }
-  
+
   // TODO: implement grouping
   
   return pool.query(q.join(' '));
