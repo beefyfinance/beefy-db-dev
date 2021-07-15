@@ -1,4 +1,4 @@
-const { existsSync, writeFileSync, unlinkSync } = require('fs');
+const { existsSync, writeFileSync } = require('fs');
 
 const { LOCK_FILE } = require('./utils/constants');
 const { log } = require('./utils/log');

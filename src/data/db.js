@@ -60,10 +60,31 @@ async function insert (table, values) {
   return pool.query(insert);
 }
 
-async function query ({ table, columns }) {
+async function query ({ table, columns, filter, group}) {
   log.info(`query price`);
-  const q = pgf('SELECT %s FROM %s', columns, table);
-  return pool.query(q);
+
+  const q = [pgf('SELECT %s FROM %s', columns, table)];
+
+  // TODO: use knex? or a proper minimalist query builder
+  if (filter) {
+    q.push('WHERE');
+
+    if (filter.name) {
+      q.push(pgf('name = %L', filter.name));
+    }
+
+    if (filter.name && filter.from) {
+      q.push('AND');
+    }
+
+    if (filter.from || filter.to) {
+      q.push(pgf('t BETWEEN %L AND %L', filter.from, filter.to));
+    }
+  }
+  
+  // TODO: implement grouping
+  
+  return pool.query(q.join(' '));
 }
 
 module.exports = {
