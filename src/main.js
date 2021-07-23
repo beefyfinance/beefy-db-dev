@@ -23,7 +23,8 @@ async function main () {
     await api.init();
     
     log.info('modules ready');
-    setTimeout(snapshot.update, 1000);
+    // FIXME: restore this before pushing to prod
+    // setTimeout(snapshot.update, 1000);
     api.listen();
 
   } catch (err) {
