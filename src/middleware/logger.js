@@ -1,4 +1,5 @@
 async function logger(ctx, next) {
+  console.log();
   console.log(`--> ${ctx.method} ${ctx.url}`);
   await next();
   const rt = ctx.response.get('X-Response-Time');

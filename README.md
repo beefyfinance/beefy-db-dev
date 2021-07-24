@@ -55,4 +55,9 @@ Fetches data from https://api.beefy.finance/tvl
 
 `from` and `to` are unix timestamps in seconds
 
-`group` is not implemented (yet). 
+`period` is not implemented (yet). 
+microseconds, milliseconds, second, minute, hour, day, week, month, quarter, year, decade, century, millennium
+
+`limit` max number of rows to return
+
+`order` desired order

@@ -60,10 +60,10 @@ async function insert (table, values) {
   return pool.query(insert);
 }
 
-async function query ({ table, columns, filter, group}) {
-  log.info(`query price`);
+async function query ({ table, filter}) {
+  log.debug(`query ${table}`);
 
-  const q = [pgf('SELECT %s FROM %s', columns, table)];
+  const q = [pgf('SELECT date_trunc(%L, to_timestamp(t)) as t, name, MAX(val) as v FROM %I', filter.period, table)];
 
   // TODO: use knex? or a proper minimalist query builder
   if (filter && Object.keys(filter).length > 0) {
@@ -80,10 +80,17 @@ async function query ({ table, columns, filter, group}) {
     if (filter.from || filter.to) {
       q.push(pgf('t BETWEEN %L AND %L', filter.from, filter.to));
     }
+
+    if (filter.period) {
+      q.push(pgf('GROUP BY t, name'));
+    }
+
+    q.push(pgf('ORDER BY t %s', filter.order));
+    q.push(pgf('LIMIT %s', filter.limit));
   }
 
-  // TODO: implement grouping
-  
+  log.debug(q.join(' '));
+
   return pool.query(q.join(' '));
 }
 
