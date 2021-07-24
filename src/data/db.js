@@ -63,7 +63,8 @@ async function insert (table, values) {
 async function query ({ table, filter}) {
   log.debug(`query ${table}`);
 
-  const q = [pgf('SELECT date_trunc(%L, to_timestamp(t)) as t, name, MAX(val) as v FROM %I', filter.period, table)];
+  // FIXME: remove name once we implement this on the client side 
+  const q = [pgf('SELECT date_trunc(%L, to_timestamp(t)) as ts, name, MAX(val) as v FROM %I', filter.period, table)];
 
   // TODO: use knex? or a proper minimalist query builder
   if (filter && Object.keys(filter).length > 0) {
@@ -82,10 +83,10 @@ async function query ({ table, filter}) {
     }
 
     if (filter.period) {
-      q.push(pgf('GROUP BY t, name'));
+      q.push(pgf('GROUP BY ts, name'));
     }
 
-    q.push(pgf('ORDER BY t %s', filter.order));
+    q.push(pgf('ORDER BY ts %s', filter.order));
     q.push(pgf('LIMIT %s', filter.limit));
   }
 
