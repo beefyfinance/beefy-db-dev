@@ -11,9 +11,9 @@ function parseFilter (q) {
   filter.name = q.name;
   filter.from = q.from || now - WEEK_IN_SECS;
   filter.to = q.to || now;
-  filter.limit = q.limit || 30;
   filter.period = q.period || 'day';
   filter.order = q.order || 'ASC';
+  filter.limit = q.limit || 30;
 
   return filter;
 }

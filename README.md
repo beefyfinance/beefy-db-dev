@@ -55,9 +55,8 @@ Fetches data from https://api.beefy.finance/tvl
 
 `from` and `to` are unix timestamps in seconds
 
-`period` is not implemented (yet). 
-microseconds, milliseconds, second, minute, hour, day, week, month, quarter, year, decade, century, millennium
+`period`: microseconds, milliseconds, second, minute, hour, day, week, month, quarter, year, decade, century, millennium
+
+`order` asc (default) / desc
 
 `limit` max number of rows to return
-
-`order` desired order
