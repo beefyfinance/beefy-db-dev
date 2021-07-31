@@ -1,7 +1,7 @@
 const { existsSync, writeFileSync, readFileSync } = require('fs');
 
-const { HOUR, HOUR_IN_MILLIS, SNAP_FILE } = require('../utils/constants');
-const { UPDATE_INTERVAL } = require('../utils/cfg');
+const { HOUR_IN_MILLIS, SNAP_FILE } = require('../utils/constants');
+const { SNAPSHOT_INTERVAL, UPDATE_INTERVAL } = require('../utils/cfg');
 const { log } = require('../utils/log');
 
 const db = require('./db');
@@ -18,9 +18,7 @@ async function update () {
   log.info(`updating snapshot`);
   
   try {
-    // IMPORTANT: This line defines the snapshot frequency
-    // it probably needs to be improved, but should work for v0.1
-    const t = Math.floor(Date.now() / HOUR_IN_MILLIS) * HOUR;
+    const t = Math.floor(Date.now() / HOUR_IN_MILLIS) * SNAPSHOT_INTERVAL;
     if (!hasSnapshot(t)){
       await snapshot(t);
     }
@@ -28,7 +26,7 @@ async function update () {
     log.error(err);
   }
   
-  setTimeout(update, UPDATE_INTERVAL);
+  setTimeout(update, UPDATE_INTERVAL * 1000);
   log.info(`updated snapshot`);
 }
 
