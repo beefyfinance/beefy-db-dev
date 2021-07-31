@@ -18,7 +18,8 @@ async function update () {
   log.info(`updating snapshot`);
   
   try {
-    const t = Math.floor(Date.now() / HOUR_IN_MILLIS) * SNAPSHOT_INTERVAL;
+    const t = Math.floor(Date.now() / (SNAPSHOT_INTERVAL * 1000)) * SNAPSHOT_INTERVAL;
+
     if (!hasSnapshot(t)){
       await snapshot(t);
     }
