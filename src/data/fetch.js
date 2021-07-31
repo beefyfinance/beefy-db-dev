@@ -9,6 +9,11 @@ async function fetchApy (t) {
   return axios.get(`${BASE_URL}/apy/breakdown?_${t}`);
 }
 
+async function fetchLps (t) {
+  log.info(`fetching lps`);
+  return axios.get(`${BASE_URL}/lps?_${t}`);
+}
+
 async function fetchPrice (t) {
   log.info(`fetching price`);
   return axios.get(`${BASE_URL}/prices?_${t}`);
@@ -21,6 +26,7 @@ async function fetchTvl (t) {
 
 module.exports = {
   fetchApy,
+  fetchLps,
   fetchPrice,
   fetchTvl,
 }

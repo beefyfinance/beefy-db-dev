@@ -5,7 +5,7 @@ const { SNAPSHOT_INTERVAL, UPDATE_INTERVAL } = require('../utils/cfg');
 const { log } = require('../utils/log');
 
 const db = require('./db');
-const { fetchApy, fetchPrice, fetchTvl } = require('./fetch');
+const { fetchApy, fetchLps, fetchPrice, fetchTvl } = require('./fetch');
 const { transformApy, transformPrice, transformTvl } = require('./transform');
 
 async function init () {
@@ -45,14 +45,16 @@ function hasSnapshot (t) {
 }
 
 async function snapshot (t) {
-  const [apy, price, tvl] = await Promise.all([
+  const [apy, lps, price, tvl] = await Promise.all([
     fetchApy(t),
+    fetchLps(t),
     fetchPrice(t),
-    fetchTvl(t), 
+    fetchTvl(t),
   ]);
 
   await Promise.all([
     db.insert("apys", transformApy(apy.data || {}, t)),
+    db.insert("prices", transformPrice(lps.data || {}, t)),
     db.insert("prices", transformPrice(price.data || {}, t)),
     db.insert("tvls", transformTvl(tvl.data || {}, t)), 
   ]);
