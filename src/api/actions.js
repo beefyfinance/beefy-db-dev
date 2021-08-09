@@ -59,9 +59,9 @@ async function bulk (ctx) {
   for (let i = 0; i < res.rows.length; i++) {
     const r = res.rows[i];
     if (group[r.name]){
-      group[r.name].push(r.v.toFixed(2));
+      group[r.name].push(r.v.toFixed(8));
     } else {
-      group[r.name] = [r.v.toFixed(2)];
+      group[r.name] = [r.v.toFixed(8)];
     }
   }
   
