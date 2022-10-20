@@ -56,7 +56,7 @@ async function migrate () {
 
 async function insert (table, values) {
   log.info(`insert into ${table}`);  
-  const insert = pgf('INSERT INTO %s (t, name, val) VALUES %L', table, values);
+  const insert = pgf('INSERT INTO %I (t, name, val) VALUES %L', table, values);
   return pool.query(insert);
 }
 
@@ -86,13 +86,36 @@ async function query ({ table, filter}) {
       q.push(pgf('GROUP BY ts, name'));
     }
 
-    q.push(pgf('ORDER BY ts %s', filter.order));
-    q.push(pgf('LIMIT %s', filter.limit));
+    const order = onlyOrder(filter.order, 'ASC');
+    const limit = onlyInteger(filter.limit, 30);
+    q.push(pgf('ORDER BY ts %s', order));
+    q.push(pgf('LIMIT %s', limit));
   }
 
   log.debug(q.join(' '));
 
   return pool.query(q.join(' '));
+}
+
+function onlyOrder(order, defaultOrder = 'ASC') {
+  order = (order || '').toString().toUpperCase();
+  if (order === 'ASC' || order === 'DESC') {
+    return order;
+  }
+
+  return defaultOrder;
+}
+
+function onlyInteger(value, defaultValue = 0) {
+  if (typeof value !== 'number') {
+    value = parseInt(value, 10);
+  }
+
+  if (value === null || value === undefined || isNaN(value) || !isFinite(value)) {
+    return defaultValue;
+  }
+
+  return Math.floor(value);
 }
 
 module.exports = {
