@@ -4,10 +4,10 @@ import { format, fromUnixTime, getUnixTime, sub } from 'date-fns';
 import { SNAPSHOT_INTERVAL } from '../../common/config.js';
 
 export const TIME_BUCKETS = {
-  '1h_1d': { bin: '1 hour', range: { days: 1 }, maRange: { hours: 6 } },
-  '1h_1w': { bin: '1 hour', range: { days: 7 }, maRange: { hours: 48 } },
-  '1d_1M': { bin: '1 day', range: { months: 1 }, maRange: { days: 10 } },
-  '1d_1Y': { bin: '1 day', range: { years: 1 }, maRange: { days: 30 } },
+  '1h_1d': { bin: '1 hour', range: { days: 1 }, maPeriod: { hours: 6 } },
+  '1h_1w': { bin: '1 hour', range: { days: 7 }, maPeriod: { hours: 48 } },
+  '1d_1M': { bin: '1 day', range: { months: 1 }, maPeriod: { days: 10 } },
+  '1d_1Y': { bin: '1 day', range: { years: 1 }, maPeriod: { days: 30 } },
 };
 
 export type TimeBucket = keyof typeof TIME_BUCKETS;
@@ -24,10 +24,10 @@ export type HLOC = {
 };
 
 export function getBucketParams(bucket: TimeBucket) {
-  const { bin, range, maRange } = TIME_BUCKETS[bucket];
+  const { bin, range, maPeriod } = TIME_BUCKETS[bucket];
   const nextSnapshotEpoch = getNextSnapshot();
   const endDate = fromUnixTime(nextSnapshotEpoch - SNAPSHOT_INTERVAL);
-  const startDate = sub(sub(endDate, range), maRange); // extra range for moving average
+  const startDate = sub(sub(endDate, range), maPeriod); // extra range for moving average
   const endEpoch = getUnixTime(endDate);
   const startEpoch = getUnixTime(startDate);
   const startTimestamp = format(startDate, 'yyyy-MM-dd HH:mm:ssx');

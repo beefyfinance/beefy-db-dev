@@ -11,23 +11,23 @@ export type Ranges = {
   prices: Range;
 };
 
-export async function getRanges(vault: string, oracle: string): Promise<Ranges> {
+export async function getRanges(vaultId: number, oracleId: number): Promise<Ranges> {
   const pool = getPool();
   const result = await pool.query(
     `
       SELECT MIN(a.t) as min, MAX(a.t) as max
       FROM apys a
-      WHERE a.name = $1
+      WHERE a.vault_id = $1
       UNION ALL
       SELECT MIN(t.t) as min, MAX(t.t) as max
       FROM tvls t
-      WHERE t.name = $1
+      WHERE t.vault_id = $1
       UNION ALL
       SELECT MIN(p.t) as min, MAX(p.t) as max
       FROM prices p
-      WHERE p.name = $2
+      WHERE p.oracle_id = $2
   `,
-    [vault, oracle]
+    [vaultId, oracleId]
   );
 
   return {
