@@ -2,6 +2,7 @@ import { getPool } from '../../common/db.js';
 import { getNextSnapshot } from '../../snapshot/utils.js';
 import { format, fromUnixTime, getUnixTime, sub } from 'date-fns';
 import { SNAPSHOT_INTERVAL } from '../../common/config.js';
+import { logger } from '../logger.js';
 
 export const TIME_BUCKETS = {
   '1h_1d': { bin: '1 hour', range: { days: 1 }, maPeriod: { hours: 6 } },
@@ -34,6 +35,14 @@ export function getBucketParams(bucket: TimeBucket) {
   return { bin, endEpoch, startEpoch, startTimestamp };
 }
 
+function debugQueryToString(query: string, params: (string | number)[]) {
+  let out = query;
+  for (let i = 0; i < params.length; ++i) {
+    out = out.replaceAll('$' + (i + 1), `'${params[i]}'`);
+  }
+  return out;
+}
+
 export async function getEntries(
   table: Table,
   column: IdColumn,
@@ -44,19 +53,20 @@ export async function getEntries(
   const pool = getPool();
 
   // note: 'close' is actually the last value in the bin, traditionally it would be the same as first 'open' in the next bin
-  const result = await pool.query(
-    `SELECT EXTRACT(EPOCH FROM date_bin($5, to_timestamp(t), $2::timestamp))::integer as t,
-            max(val)                                                                  as h,
-            min(val)                                                                  as l,
-            (array_agg(val ORDER BY t ASC))[1]                                           o,
-            (array_agg(val ORDER BY t DESC))[1]                                          c
-     FROM ${table}
-     WHERE ${column} = $1
-       AND t BETWEEN $3 AND $4
-     GROUP BY date_bin($5, to_timestamp(t), $2::timestamp)
-     ORDER BY t ASC`,
-    [id, startTimestamp, startEpoch, endEpoch, bin]
-  );
+  const query = `SELECT EXTRACT(EPOCH FROM date_bin($5, to_timestamp(t), $2::timestamp))::integer as t,
+                        max(val)                                                                  as h,
+                        min(val)                                                                  as l,
+                        (array_agg(val ORDER BY t ASC))[1]                                           o,
+                        (array_agg(val ORDER BY t DESC))[1]                                          c
+                 FROM ${table}
+                 WHERE ${column} = $1
+                   AND t BETWEEN $3 AND $4
+                 GROUP BY date_bin($5, to_timestamp(t), $2::timestamp)
+                 ORDER BY t ASC`;
+  const params = [id, startTimestamp, startEpoch, endEpoch, bin];
+
+  logger.trace(debugQueryToString(query, params));
+  const result = await pool.query(query, params);
 
   return result.rows;
 }
