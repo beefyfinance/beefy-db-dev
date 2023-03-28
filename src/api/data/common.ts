@@ -16,12 +16,9 @@ export type TimeBucket = keyof typeof TIME_BUCKETS;
 export type Table = 'prices' | 'apys' | 'tvls';
 export type IdColumn = 'oracle_id' | 'vault_id';
 
-export type HLOC = {
+export type DataPoint = {
   t: number;
-  h: number;
-  l: number;
-  o: number;
-  c: number;
+  v: number;
 };
 
 export function getBucketParams(bucket: TimeBucket) {
@@ -48,16 +45,13 @@ export async function getEntries(
   column: IdColumn,
   id: number,
   bucket: TimeBucket
-): Promise<HLOC[]> {
+): Promise<DataPoint[]> {
   const { bin, endEpoch, startEpoch, startTimestamp } = getBucketParams(bucket);
   const pool = getPool();
 
   // note: 'close' is actually the last value in the bin, traditionally it would be the same as first 'open' in the next bin
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($5, to_timestamp(t), $2::timestamp))::integer as t,
-                        max(val)                                                                  as h,
-                        min(val)                                                                  as l,
-                        (array_agg(val ORDER BY t ASC))[1]                                           o,
-                        (array_agg(val ORDER BY t DESC))[1]                                          c
+                        max(val)                                                                  as v
                  FROM ${table}
                  WHERE ${column} = $1
                    AND t BETWEEN $3 AND $4

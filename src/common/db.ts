@@ -1,6 +1,11 @@
-import type { ClientConfig } from 'pg';
+import type { ClientConfig, PoolConfig } from 'pg';
 import pg from 'pg';
-import { DATABASE_SSL, DATABASE_URL } from './config.js';
+import {
+  DATABASE_MAX_POOL_SIZE,
+  DATABASE_MIN_POOL_SIZE,
+  DATABASE_SSL,
+  DATABASE_URL,
+} from './config.js';
 import createKnex, { Knex } from 'knex';
 import PgConnectionConfig = Knex.PgConnectionConfig;
 
@@ -27,12 +32,20 @@ export function createClientConfig(): ClientConfig {
   };
 }
 
+export function createPoolConfig(): PoolConfig {
+  return {
+    ...createClientConfig(),
+    min: DATABASE_MIN_POOL_SIZE,
+    max: DATABASE_MAX_POOL_SIZE,
+  };
+}
+
 export function createClient(): pg.Client {
   return new pg.Client(createClientConfig());
 }
 
 function createPool(): pg.Pool {
-  return new pg.Pool(createClientConfig());
+  return new pg.Pool(createPoolConfig());
 }
 
 let pool: pg.Pool | undefined;
@@ -49,7 +62,7 @@ function createQueryBuilder() {
   return createKnex({
     client: 'pg',
     connection: createClientConfig() as PgConnectionConfig,
-    pool: { min: 0, max: 10 },
+    pool: { min: DATABASE_MIN_POOL_SIZE, max: DATABASE_MAX_POOL_SIZE },
   });
 }
 
