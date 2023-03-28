@@ -1,15 +1,15 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
-import { getBulkPrices, getPrices } from '../data/prices.js';
+import { getRangePrices, getPrices } from '../data/prices.js';
 import S from 'fluent-json-schema';
 import { getOracleId, TIME_BUCKETS, TimeBucket } from '../data/common.js';
-import { API_BULK_KEY } from '../../common/config.js';
+import { API_RANGE_KEY } from '../../common/config.js';
 
 export type PricesQueryString = {
   oracle: string;
   bucket: TimeBucket;
 };
 
-export type BulkPricesQueryString = {
+export type RangePricesQueryString = {
   oracle: string;
   from: number;
   to: number;
@@ -20,7 +20,7 @@ const pricesQueryString = S.object()
   .prop('oracle', S.string().required())
   .prop('bucket', S.string().enum(Object.keys(TIME_BUCKETS)).required());
 
-const bulkPricesQueryString = S.object()
+const rangePricesQueryString = S.object()
   .prop('oracle', S.string().required())
   .prop('from', S.number().required())
   .prop('to', S.number().required())
@@ -30,8 +30,8 @@ export const pricesSchema: FastifySchema = {
   querystring: pricesQueryString,
 };
 
-export const bulkPricesSchema: FastifySchema = {
-  querystring: bulkPricesQueryString,
+export const rangePricesSchema: FastifySchema = {
+  querystring: rangePricesQueryString,
 };
 
 export default async function (
@@ -56,11 +56,11 @@ export default async function (
     }
   );
 
-  instance.get<{ Querystring: BulkPricesQueryString }>(
+  instance.get<{ Querystring: RangePricesQueryString }>(
     '/range',
-    { schema: bulkPricesSchema },
+    { schema: rangePricesSchema },
     async (request, reply) => {
-      if (!request.query.key || request.query.key !== API_BULK_KEY) {
+      if (!request.query.key || request.query.key !== API_RANGE_KEY) {
         reply.status(401);
         return { error: 'Unauthorized' };
       }
@@ -71,7 +71,7 @@ export default async function (
         return { error: 'Not Found' };
       }
 
-      return await getBulkPrices(oracle_id, request.query.from, request.query.to);
+      return await getRangePrices(oracle_id, request.query.from, request.query.to);
     }
   );
 

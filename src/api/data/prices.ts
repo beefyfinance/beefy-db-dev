@@ -6,7 +6,7 @@ export async function getPrices(oracle_id: number, bucket: TimeBucket): Promise<
   return getEntries('prices', 'oracle_id', oracle_id, bucket);
 }
 
-export async function getBulkPrices(
+export async function getRangePrices(
   oracle_id: number,
   from: number,
   to: number
