@@ -111,30 +111,21 @@ Pino outputs logs in JSON format to stdout. In development this is then piped to
 #### Query string
 `oracle` - a price oracle id, e.g. `BNB`
 
-`bucket` - a bucket, size_range e.g. `1d_1Y | 1h_1M | 1h_1d | 4h_3M | 1d_1M | 1h_1w`
+`bucket` - a bucket, size_range e.g. `1h_1d | 1h_1w | 1d_1M | 1d_1Y`
 
 ### Response
 ```json
 [
   {
     "t": 1671244200,
-    "h": 0.002845395315750137,
-    "l": 0.0031265829057995297,
-    "o": 0.0030422632349388335,
-    "c": 0.003120593087156096
+    "v": 0.002845395315750137
   }
 ]
 ```
 
 `t` - timestamp in seconds, start of bucket
 
-`h` - high for bucket
-
-`l` - low for bucket
-
-`o` - open for bucket
-
-`c` - close for bucket
+`v` - high for bucket
 
 ### APYs
 #### Url
