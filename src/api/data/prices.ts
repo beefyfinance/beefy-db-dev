@@ -21,7 +21,6 @@ export async function getRangePrices(
                  ORDER BY t ASC`;
   const params = [oracle_id, format(fromUnixTime(from), 'yyyy-MM-dd HH:mm:ssxx'), format(fromUnixTime(to), 'yyyy-MM-dd HH:mm:ssxx')];
 
-  console.log(params)
   const result = await pool.query(query, params);
 
   return result.rows;
