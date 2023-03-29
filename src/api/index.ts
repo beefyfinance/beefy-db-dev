@@ -35,7 +35,7 @@ server.register(async (instance, _opts, done) => {
   done();
 });
 
-server.listen({ port: API_PORT }, err => {
+server.listen({ port: API_PORT, host: '0.0.0.0' }, err => {
   if (err) {
     logger.error(err);
     process.exit(1);
