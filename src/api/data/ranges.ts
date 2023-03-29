@@ -15,15 +15,15 @@ export async function getRanges(vaultId: number, oracleId: number): Promise<Rang
   const pool = getPool();
   const result = await pool.query(
     `
-      SELECT MIN(a.t) as min, MAX(a.t) as max
+      SELECT EXTRACT(EPOCH FROM MIN(a.t))::integer as min, EXTRACT(EPOCH FROM MAX(a.t))::integer as max
       FROM apys a
       WHERE a.vault_id = $1
       UNION ALL
-      SELECT MIN(t.t) as min, MAX(t.t) as max
+      SELECT EXTRACT(EPOCH FROM MIN(t.t))::integer as min, EXTRACT(EPOCH FROM MAX(t.t))::integer as max
       FROM tvls t
       WHERE t.vault_id = $1
       UNION ALL
-      SELECT MIN(p.t) as min, MAX(p.t) as max
+      SELECT EXTRACT(EPOCH FROM MIN(p.t))::integer as min, EXTRACT(EPOCH FROM MAX(p.t))::integer as max
       FROM prices p
       WHERE p.oracle_id = $2
   `,

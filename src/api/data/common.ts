@@ -28,7 +28,7 @@ export function getBucketParams(bucket: TimeBucket) {
   const startDate = sub(sub(endDate, range), maPeriod); // extra range for moving average
   const endEpoch = getUnixTime(endDate);
   const startEpoch = getUnixTime(startDate);
-  const startTimestamp = format(startDate, 'yyyy-MM-dd HH:mm:ssx');
+  const startTimestamp = format(startDate, 'yyyy-MM-dd HH:mm:ssxx');
   return { bin, endEpoch, startEpoch, startTimestamp };
 }
 
@@ -50,12 +50,12 @@ export async function getEntries(
   const pool = getPool();
 
   // note: 'close' is actually the last value in the bin, traditionally it would be the same as first 'open' in the next bin
-  const query = `SELECT EXTRACT(EPOCH FROM date_bin($5, to_timestamp(t), $2::timestamp))::integer as t,
-                        max(val)                                                                  as v
+  const query = `SELECT EXTRACT(EPOCH FROM date_bin($5, t, $2::timestamp))::integer as t,
+                        max(val) as v
                  FROM ${table}
                  WHERE ${column} = $1
-                   AND t BETWEEN $3 AND $4
-                 GROUP BY date_bin($5, to_timestamp(t), $2::timestamp)
+                   AND t BETWEEN to_timestamp($3) AND to_timestamp($4)
+                 GROUP BY date_bin($5, t, $2::timestamp)
                  ORDER BY t ASC`;
   const params = [id, startTimestamp, startEpoch, endEpoch, bin];
 
