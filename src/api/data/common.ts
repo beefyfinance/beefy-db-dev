@@ -1,6 +1,6 @@
-import { getPool } from '../../common/db.js';
+import { dateToTimestamp, getPool } from '../../common/db.js';
 import { getNextSnapshot } from '../../snapshot/utils.js';
-import { format, fromUnixTime, getUnixTime, sub } from 'date-fns';
+import { fromUnixTime, sub } from 'date-fns';
 import { SNAPSHOT_INTERVAL } from '../../common/config.js';
 import { logger } from '../logger.js';
 
@@ -26,10 +26,9 @@ export function getBucketParams(bucket: TimeBucket) {
   const nextSnapshotEpoch = getNextSnapshot();
   const endDate = fromUnixTime(nextSnapshotEpoch - SNAPSHOT_INTERVAL);
   const startDate = sub(sub(endDate, range), maPeriod); // extra range for moving average
-  const endEpoch = getUnixTime(endDate);
-  const startEpoch = getUnixTime(startDate);
-  const startTimestamp = format(startDate, 'yyyy-MM-dd HH:mm:ssxx');
-  return { bin, endEpoch, startEpoch, startTimestamp };
+  const startTimestamp = dateToTimestamp(startDate);
+  const endTimestamp = dateToTimestamp(endDate);
+  return { bin, startTimestamp, endTimestamp };
 }
 
 function debugQueryToString(query: string, params: (string | number)[]) {
@@ -46,18 +45,17 @@ export async function getEntries(
   id: number,
   bucket: TimeBucket
 ): Promise<DataPoint[]> {
-  const { bin, endEpoch, startEpoch, startTimestamp } = getBucketParams(bucket);
+  const { bin, startTimestamp, endTimestamp } = getBucketParams(bucket);
   const pool = getPool();
 
-  // note: 'close' is actually the last value in the bin, traditionally it would be the same as first 'open' in the next bin
-  const query = `SELECT EXTRACT(EPOCH FROM date_bin($5, t, $2::timestamp))::integer as t,
-                        max(val) as v
+  const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
+                        max(val)                                         as v
                  FROM ${table}
                  WHERE ${column} = $1
-                   AND t BETWEEN to_timestamp($3) AND to_timestamp($4)
-                 GROUP BY date_bin($5, t, $2::timestamp)
+                   AND t BETWEEN $2 AND $3
+                 GROUP BY date_bin($4, t, $2)
                  ORDER BY t ASC`;
-  const params = [id, startTimestamp, startEpoch, endEpoch, bin];
+  const params = [id, startTimestamp, endTimestamp, bin];
 
   logger.trace(debugQueryToString(query, params));
   const result = await pool.query(query, params);
