@@ -2,12 +2,11 @@ import { getLoggerFor } from '../common/log.js';
 import { getApys, getLpPrices, getPrices, getTvls } from './beefy-api/api.js';
 import { getNextSnapshot } from './utils.js';
 import { transformApy, transformLps, transformPrices, transformTvl } from './transform.js';
-import { getQueryBuilder } from '../common/db.js';
+import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { updateOracleIds, updateVaultIds } from './ids.js';
-import { format, fromUnixTime } from 'date-fns';
 
 const logger = getLoggerFor('snapshot');
 
@@ -87,7 +86,8 @@ async function insertOracleIdData(
   data: Record<number, number>,
   oracleIds: Record<string, number>
 ) {
-  const snapshotTimestamp = format(fromUnixTime(snapshot), 'yyyy-MM-dd HH:mm:ssxx');
+  const snapshotTimestamp = unixToTimestamp(snapshot);
+
   await builder.table(table).insert(
     Object.entries(data).map(([oracle_id, val]) => ({
       oracle_id: oracleIds[oracle_id], // map string to numeric id
@@ -104,7 +104,8 @@ async function insertVaultIdData(
   data: Record<number, number>,
   vaultIds: Record<string, number>
 ) {
-  const snapshotTimestamp = format(fromUnixTime(snapshot), 'yyyy-MM-dd HH:mm:ssxx');
+  const snapshotTimestamp = unixToTimestamp(snapshot);
+
   await builder.table(table).insert(
     Object.entries(data).map(([vault_id, val]) => ({
       vault_id: vaultIds[vault_id], // map string to numeric id

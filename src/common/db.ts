@@ -8,6 +8,17 @@ import {
 } from './config.js';
 import createKnex, { Knex } from 'knex';
 import PgConnectionConfig = Knex.PgConnectionConfig;
+import { format, fromUnixTime } from 'date-fns';
+
+const pgTimestampWithTzFormat = 'yyyy-MM-dd HH:mm:ssxx';
+
+export function dateToTimestamp(date: Date): string {
+  return format(date, pgTimestampWithTzFormat);
+}
+
+export function unixToTimestamp(unix: number): string {
+  return dateToTimestamp(fromUnixTime(unix));
+}
 
 export function createClientConfig(): ClientConfig {
   if (!DATABASE_URL) {
@@ -15,7 +26,6 @@ export function createClientConfig(): ClientConfig {
   }
 
   // Default to rejectUnauthorized: false as per existing codebase
-  // TODO: check if live database is using self-signed certs/still needs this
   let ssl: boolean | { rejectUnauthorized: false } = { rejectUnauthorized: false };
   switch (DATABASE_SSL) {
     case 'true':
