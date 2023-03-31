@@ -7,6 +7,7 @@ import { logger } from '../logger.js';
 export const TIME_BUCKETS = {
   '1h_1d': { bin: '1 hour', range: { days: 1 }, maPeriod: { hours: 6 } },
   '1h_1w': { bin: '1 hour', range: { days: 7 }, maPeriod: { hours: 48 } },
+  '1h_1M': { bin: '1 hour', range: { days: 30 }, maPeriod: { hours: 96 } },
   '1d_1M': { bin: '1 day', range: { months: 1 }, maPeriod: { days: 10 } },
   '1d_1Y': { bin: '1 day', range: { years: 1 }, maPeriod: { days: 30 } },
 };
