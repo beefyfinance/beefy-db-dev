@@ -4,9 +4,10 @@ import FastifyRateLimit from '@fastify/rate-limit';
 import FastifyUnderPressure from '@fastify/under-pressure';
 import FastifyEtag from '@fastify/etag';
 import FastifyCors from '@fastify/cors';
-import { NODE_ENV, API_PORT, API_CORS_ORIGIN } from '../common/config.js';
+import { API_CORS_ORIGIN, API_PORT, API_RANGE_KEY, NODE_ENV } from '../common/config.js';
 import routes from './routes/index.js';
 import { logger } from './logger.js';
+import type { RangePricesQueryString } from './routes/prices.js';
 
 const server = Fastify({
   logger,
@@ -20,6 +21,9 @@ server.register(async (instance, _opts, done) => {
     .register(FastifyRateLimit, {
       timeWindow: '1 minute',
       max: 100,
+      allowList: request => {
+        return !!request.query && (request.query as RangePricesQueryString).key === API_RANGE_KEY;
+      },
     })
     .register(FastifyEtag)
     .register(FastifyCors, {
