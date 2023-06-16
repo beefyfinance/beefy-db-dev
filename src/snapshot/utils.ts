@@ -9,7 +9,12 @@ export async function getLastSnapshot() {
     throw new Error('Could not get last snapshot');
   }
 
-  return result[0]['max'].getTime()/1000;
+  // db is empty
+  if (!result[0]['max']) {
+    return 0;
+  }
+
+  return result[0]['max'].getTime() / 1000;
 }
 
 export function getNextSnapshot() {

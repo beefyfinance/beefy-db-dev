@@ -19,7 +19,7 @@ export const DATABASE_MAX_POOL_SIZE: number = getNumberEnv('DATABASE_MAX_POOL_SI
 export const API_PORT: number = getNumberEnv('PORT', 4000);
 export const API_CORS_ORIGIN: RegExp = new RegExp(
   process.env['API_CORS_ORIGIN'] ||
-    '^(https:\\/\\/app\\.beefy\\.(com|finance)|http:\\/\\/localhost(:[0-9]+)?)|http:\\/\\/127.0.0.1(:[0-9]+)?)$'
+    '^(https:\\/\\/app\\.beefy\\.(com|finance)|http:\\/\\/localhost(:[0-9]+)?|http:\\/\\/127.0.0.1(:[0-9]+)?)$'
 );
 export const API_RANGE_KEY: string | undefined = process.env['API_RANGE_KEY'];
 export const SNAPSHOT_INTERVAL: number = getNumberEnv('SNAPSHOT_INTERVAL', 15 * 60);
