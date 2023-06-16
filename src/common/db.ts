@@ -71,7 +71,7 @@ export function getPool() {
 function createQueryBuilder() {
   return createKnex({
     client: 'pg',
-    connection: createClientConfig() as PgConnectionConfig,
+    connection: createClientConfig() as unknown as PgConnectionConfig,
     pool: { min: DATABASE_MIN_POOL_SIZE, max: DATABASE_MAX_POOL_SIZE },
   });
 }

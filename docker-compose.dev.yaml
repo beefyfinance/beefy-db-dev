@@ -1,0 +1,17 @@
+version: '3.9' # optional since v1.27.0
+
+services:
+  db-dev:
+    image: postgres:14.8-alpine
+    command: postgres -c logging_collector=off -c log_min_duration_statement=1s -c log_statement=none -c max_locks_per_transaction=500
+    env_file: .env
+    stop_signal: SIGINT
+    ports:
+      - '5432:5432'
+    environment:
+      TZ: 'UTC'
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: beefy-db-dev
+      POSTGRES_PASSWORD: beefy-db-dev
+      POSTGRES_DB: beefy-db-dev
+      PGDATA: /pgdata
