@@ -11,22 +11,26 @@ async function run() {
 
   // Check for restart in same snapshot interval
   const nextSnapshot = getNextSnapshot();
-  if (nextSnapshot > lastSnapshot) {
+
+  // align next snapshot to interval
+  const waitSeconds = Math.ceil(nextSnapshot + SNAPSHOT_INTERVAL - Date.now() / 1000);
+  logger.info(
+    'Waiting %ds to align next scheduled snapshot to the %ds interval',
+    waitSeconds,
+    SNAPSHOT_INTERVAL
+  );
+  setTimeout(() => {
     // update on interval
     scheduleUpdate();
+    // do this update
+    performScheduledUpdate();
+  }, waitSeconds * 1000);
+
+  // perform a snapshot now if we missed one and next is more than 1 minute away
+  if (nextSnapshot > lastSnapshot && waitSeconds > 60) {
     // update on startup
-    logger.info('Missed a snapshot, updating now');
+    logger.info('Missed a snapshot while offline, performing now:');
     await performUpdateWithRetries();
-  } else {
-    // wait
-    const wait = (nextSnapshot + SNAPSHOT_INTERVAL - Date.now() / 1000) * 1000;
-    logger.info('Waiting %ds for next snapshot', (wait / 1000).toFixed(4));
-    setTimeout(() => {
-      // update on interval
-      scheduleUpdate();
-      // update on startup after wait
-      performScheduledUpdate();
-    }, wait);
   }
 }
 
