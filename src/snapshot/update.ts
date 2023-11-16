@@ -1,12 +1,19 @@
 import { getLoggerFor } from '../common/log.js';
-import { getApys, getLpPrices, getPrices, getTvls } from './beefy-api/api.js';
+import { getApys, getLpBreakdown, getLpPrices, getPrices, getTvls } from './beefy-api/api.js';
 import { getNextSnapshot } from './utils.js';
-import { transformApy, transformLps, transformPrices, transformTvl } from './transform.js';
+import {
+  transformApy,
+  transformLpBreakdown,
+  transformLps,
+  transformPrices,
+  transformTvl,
+} from './transform.js';
 import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { updateOracleIds, updateVaultIds } from './ids.js';
+import { LpBreakdown } from './beefy-api/types.js';
 
 const logger = getLoggerFor('snapshot');
 
@@ -16,16 +23,19 @@ async function performUpdate() {
 
   // All or nothing fetch
   const cacheBuster = nextSnapshot.toString();
-  const [priceResponse, lpsResponse, apyResponse, tvlResponse] = await Promise.all([
-    getPrices(cacheBuster),
-    getLpPrices(cacheBuster),
-    getApys(cacheBuster),
-    getTvls(cacheBuster),
-  ]);
+  const [priceResponse, lpsResponse, lbBreakdownResponse, apyResponse, tvlResponse] =
+    await Promise.all([
+      getPrices(cacheBuster),
+      getLpPrices(cacheBuster),
+      getLpBreakdown(cacheBuster),
+      getApys(cacheBuster),
+      getTvls(cacheBuster),
+    ]);
 
   // Remove invalid data / transform to same format
   const priceData = transformPrices(priceResponse);
   const lpData = transformLps(lpsResponse);
+  const lbBreakdownData = transformLpBreakdown(lbBreakdownResponse);
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
 
@@ -41,6 +51,7 @@ async function performUpdate() {
     await Promise.all([
       insertOracleIdData(trx, 'prices', nextSnapshot, priceData, oracleIds),
       insertOracleIdData(trx, 'prices', nextSnapshot, lpData, oracleIds),
+      insertVaultIdLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, vaultIds),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
     ]);
@@ -101,7 +112,7 @@ async function insertVaultIdData(
   builder: Knex,
   table: 'apys' | 'tvls',
   snapshot: number,
-  data: Record<number, number>,
+  data: Record<number, number | object>,
   vaultIds: Record<string, number>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
@@ -112,5 +123,34 @@ async function insertVaultIdData(
       t: snapshotTimestamp,
       val,
     }))
+  );
+}
+
+// sort array A by `comparator` and apply the same order to array B
+function sortTwoArrays<A, B>(a: A[], b: B[], comparator: (a: A, b: A) => number) {
+  const combined = a.map((a, i) => [a, b[i]] as [A, B]);
+  combined.sort((a, b) => comparator(a[0], b[0]));
+  return [combined.map(([a, _]) => a), combined.map(([_, b]) => b)];
+}
+
+async function insertVaultIdLpBreakdownData(
+  builder: Knex,
+  table: 'lp_breakdowns',
+  snapshot: number,
+  data: Record<number, LpBreakdown>,
+  vaultIds: Record<string, number>
+) {
+  const snapshotTimestamp = unixToTimestamp(snapshot);
+
+  await builder.table(table).insert(
+    Object.entries(data)
+      .filter(([vault_id, _]) => vaultIds[vault_id] !== undefined)
+      .map(([vault_id, val]) => ({
+        vault_id: vaultIds[vault_id], // map string to numeric id
+        t: snapshotTimestamp,
+        balances: sortTwoArrays(val.tokens, val.balances, (a, b) =>
+          a.toLocaleLowerCase().localeCompare(b.toLocaleLowerCase())
+        )[1],
+      }))
   );
 }
