@@ -1,11 +1,13 @@
+ALTER TABLE price_oracles ADD COLUMN tokens TEXT[] NOT NULL DEFAULT '{}';
 
 CREATE TABLE lp_breakdowns (
-    vault_id integer NOT NULL,
+    oracle_id integer NOT NULL REFERENCES price_oracles (id),
     t timestamp with time zone NOT NULL,
-    balances DOUBLE PRECISION[] -- sorted by token address
+    balances DOUBLE PRECISION[],
+    total_supply DOUBLE PRECISION
 );
 
 ALTER TABLE ONLY lp_breakdowns
-    ADD CONSTRAINT lp_breakdowns_t_pkey PRIMARY KEY (vault_id, t);
+    ADD CONSTRAINT lp_breakdowns_t_pkey PRIMARY KEY (oracle_id, t);
 
 ALTER TABLE lp_breakdowns CLUSTER ON lp_breakdowns_t_pkey;

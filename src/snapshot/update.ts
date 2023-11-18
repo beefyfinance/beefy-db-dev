@@ -2,6 +2,7 @@ import { getLoggerFor } from '../common/log.js';
 import { getApys, getLpBreakdown, getLpPrices, getPrices, getTvls } from './beefy-api/api.js';
 import { getNextSnapshot } from './utils.js';
 import {
+  createPriceOracleData,
   transformApy,
   transformLpBreakdown,
   transformLps,
@@ -12,7 +13,7 @@ import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
-import { updateOracleIds, updateVaultIds } from './ids.js';
+import { PriceOracleRow, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown } from './beefy-api/types.js';
 
 const logger = getLoggerFor('snapshot');
@@ -39,19 +40,24 @@ async function performUpdate() {
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
 
+  const priceOracleRows = createPriceOracleData(
+    Object.keys(priceData).concat(Object.keys(lpData)),
+    lbBreakdownData
+  );
+
   // Get vault and oracle ids
-  const [vaultIds, oracleIds] = await Promise.all([
+  const [vaultIds, oracleData] = await Promise.all([
     updateVaultIds(Object.keys(apyData).concat(Object.keys(tvlData))),
-    updateOracleIds(Object.keys(priceData).concat(Object.keys(lpData))),
+    updatePriceOracleRows(Object.values(priceOracleRows)),
   ]);
 
   // All or nothing insert
   const builder = getQueryBuilder();
   await builder.transaction(async trx => {
     await Promise.all([
-      insertOracleIdData(trx, 'prices', nextSnapshot, priceData, oracleIds),
-      insertOracleIdData(trx, 'prices', nextSnapshot, lpData, oracleIds),
-      insertVaultIdLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, vaultIds),
+      insertOracleData(trx, 'prices', nextSnapshot, priceData, oracleData),
+      insertOracleData(trx, 'prices', nextSnapshot, lpData, oracleData),
+      insertOracleLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, oracleData),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
     ]);
@@ -90,18 +96,18 @@ export async function performUpdateWithRetries(
   throw new Error(`Failed to update snapshot after ${maxRetries} retries`);
 }
 
-async function insertOracleIdData(
+async function insertOracleData(
   builder: Knex,
   table: 'prices',
   snapshot: number,
   data: Record<number, number>,
-  oracleIds: Record<string, number>
+  oracleRows: Record<string, PriceOracleRow>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
   await builder.table(table).insert(
     Object.entries(data).map(([oracle_id, val]) => ({
-      oracle_id: oracleIds[oracle_id], // map string to numeric id
+      oracle_id: oracleRows[oracle_id]?.id, // map string to numeric id
       t: snapshotTimestamp,
       val,
     }))
@@ -126,31 +132,21 @@ async function insertVaultIdData(
   );
 }
 
-// sort array A by `comparator` and apply the same order to array B
-function sortTwoArrays<A, B>(a: A[], b: B[], comparator: (a: A, b: A) => number) {
-  const combined = a.map((a, i) => [a, b[i]] as [A, B]);
-  combined.sort((a, b) => comparator(a[0], b[0]));
-  return [combined.map(([a, _]) => a), combined.map(([_, b]) => b)];
-}
-
-async function insertVaultIdLpBreakdownData(
+async function insertOracleLpBreakdownData(
   builder: Knex,
   table: 'lp_breakdowns',
   snapshot: number,
   data: Record<number, LpBreakdown>,
-  vaultIds: Record<string, number>
+  oracleRows: Record<string, PriceOracleRow>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
   await builder.table(table).insert(
-    Object.entries(data)
-      .filter(([vault_id, _]) => vaultIds[vault_id] !== undefined)
-      .map(([vault_id, val]) => ({
-        vault_id: vaultIds[vault_id], // map string to numeric id
-        t: snapshotTimestamp,
-        balances: sortTwoArrays(val.tokens, val.balances, (a, b) =>
-          a.toLocaleLowerCase().localeCompare(b.toLocaleLowerCase())
-        )[1],
-      }))
+    Object.entries(data).map(([oracle_id, val]) => ({
+      oracle_id: oracleRows[oracle_id]?.id, // map string to numeric id
+      t: snapshotTimestamp,
+      balances: val.balances,
+      total_supply: parseFloat(val.totalSupply),
+    }))
   );
 }

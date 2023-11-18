@@ -1,5 +1,6 @@
-import { mapValues } from 'lodash-es';
+import { keyBy, mapValues } from 'lodash-es';
 import { LpBreakdown, LpBreakdownResponse } from './beefy-api/types';
+import { PriceOracleRowData } from './ids';
 
 /**
  * Convert strings to numbers and remove undefined, null, NaN and Infinity
@@ -51,4 +52,21 @@ export const transformLpBreakdown = (input: LpBreakdownResponse): Record<string,
 export function transformTvl(input: Record<string, Record<string, any>>): Record<string, number> {
   const byChainId = mapValues(input, value => transformNumberRecord(value));
   return Object.assign({}, ...Object.values(byChainId));
+}
+
+export function createPriceOracleData(
+  oracleIds: string[],
+  lpBreakdown: LpBreakdownResponse
+): Record<string, PriceOracleRowData> {
+  const oracleIdData = oracleIds.map(oracle_id => ({ oracle_id, tokens: [] as string[] }));
+  const breakdownData = Object.entries(lpBreakdown).map(([oracle_id, breakdown]) => ({
+    oracle_id,
+    tokens: breakdown.tokens,
+  }));
+
+  const oracleIdMap = keyBy(oracleIdData, 'oracle_id');
+  const breakdownMap = keyBy(breakdownData, 'oracle_id');
+
+  // lp breakdown takes precedence as it has more info
+  return Object.assign(oracleIdMap, breakdownMap);
 }
