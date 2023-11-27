@@ -3,19 +3,31 @@ import { LpBreakdown, LpBreakdownResponse } from './beefy-api/types';
 import { PriceOracleRowData } from './ids';
 
 /**
+ * Convert strings to numbers and return undefined if null, NaN and Infinity
+ */
+function transformNumber(value: unknown): number | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    value = parseFloat(value);
+  }
+
+  if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+    return value;
+  }
+
+  return undefined;
+}
+
+/**
  * Convert strings to numbers and remove undefined, null, NaN and Infinity
  */
 export function transformNumberRecord(input: Record<string, any>): Record<string, number> {
   return Object.entries(input).reduce((acc, [key, value]) => {
-    if (typeof value === 'string') {
-      value = parseFloat(value);
-    }
-
-    if (value === undefined || value === null) {
-      return acc;
-    }
-
-    if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+    const price = transformNumber(value);
+    if (price !== undefined) {
       acc[key] = value;
     }
 
@@ -25,17 +37,15 @@ export function transformNumberRecord(input: Record<string, any>): Record<string
 
 export const transformApy = transformNumberRecord;
 export const transformPrices = transformNumberRecord;
-export const transformLps = transformNumberRecord;
+
 export const transformLpBreakdown = (input: LpBreakdownResponse): Record<string, LpBreakdown> => {
   return Object.entries(input).reduce((acc, [key, value]) => {
-    if (value === undefined || value === null) {
-      return acc;
-    }
-    if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
-      return acc;
-    }
     if (
       typeof value === 'object' &&
+      'tokens' in value &&
+      'balances' in value &&
+      'totalSupply' in value &&
+      value.totalSupply &&
       value.tokens &&
       value.balances &&
       value.tokens.length === value.balances.length
@@ -44,6 +54,20 @@ export const transformLpBreakdown = (input: LpBreakdownResponse): Record<string,
     }
     return acc;
   }, {} as Record<string, LpBreakdown>);
+};
+
+export const transformLpBreakdownToPrices = (
+  input: LpBreakdownResponse
+): Record<string, number> => {
+  return Object.entries(input).reduce((acc, [key, value]) => {
+    if (typeof value === 'object' && 'price' in value) {
+      const price = transformNumber(value.price);
+      if (price !== undefined) {
+        acc[key] = price;
+      }
+    }
+    return acc;
+  }, {} as Record<string, number>);
 };
 
 /**
@@ -56,7 +80,7 @@ export function transformTvl(input: Record<string, Record<string, any>>): Record
 
 export function createPriceOracleData(
   oracleIds: string[],
-  lpBreakdown: LpBreakdownResponse
+  lpBreakdown: Record<string, LpBreakdown>
 ): Record<string, PriceOracleRowData> {
   const oracleIdData = oracleIds.map(oracle_id => ({ oracle_id, tokens: [] as string[] }));
   const breakdownData = Object.entries(lpBreakdown).map(([oracle_id, breakdown]) => ({

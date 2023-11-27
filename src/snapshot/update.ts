@@ -1,11 +1,11 @@
 import { getLoggerFor } from '../common/log.js';
-import { getApys, getLpBreakdown, getLpPrices, getPrices, getTvls } from './beefy-api/api.js';
+import { getApys, getLpBreakdown, getPrices, getTvls } from './beefy-api/api.js';
 import { getNextSnapshot } from './utils.js';
 import {
   createPriceOracleData,
   transformApy,
   transformLpBreakdown,
-  transformLps,
+  transformLpBreakdownToPrices,
   transformPrices,
   transformTvl,
 } from './transform.js';
@@ -24,18 +24,16 @@ async function performUpdate() {
 
   // All or nothing fetch
   const cacheBuster = nextSnapshot.toString();
-  const [priceResponse, lpsResponse, lbBreakdownResponse, apyResponse, tvlResponse] =
-    await Promise.all([
-      getPrices(cacheBuster),
-      getLpPrices(cacheBuster),
-      getLpBreakdown(cacheBuster),
-      getApys(cacheBuster),
-      getTvls(cacheBuster),
-    ]);
+  const [priceResponse, lbBreakdownResponse, apyResponse, tvlResponse] = await Promise.all([
+    getPrices(cacheBuster),
+    getLpBreakdown(cacheBuster),
+    getApys(cacheBuster),
+    getTvls(cacheBuster),
+  ]);
 
   // Remove invalid data / transform to same format
   const priceData = transformPrices(priceResponse);
-  const lpData = transformLps(lpsResponse);
+  const lpData = transformLpBreakdownToPrices(lbBreakdownResponse);
   const lbBreakdownData = transformLpBreakdown(lbBreakdownResponse);
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
@@ -118,7 +116,7 @@ async function insertVaultIdData(
   builder: Knex,
   table: 'apys' | 'tvls',
   snapshot: number,
-  data: Record<number, number | object>,
+  data: Record<number, number>,
   vaultIds: Record<string, number>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);

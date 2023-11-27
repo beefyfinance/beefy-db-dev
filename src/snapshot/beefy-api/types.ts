@@ -7,4 +7,7 @@ export type LpBreakdown = {
   balances: string[]; // balance in token order: "1234.4567", "5678", ...
   totalSupply: string; // total supply: "1234.4567"
 };
-export type LpBreakdownResponse = Record<string /* oracle id */, LpBreakdown>;
+export type LpNoBreakdown = {
+  price: number;
+};
+export type LpBreakdownResponse = Record<string /* oracle id */, LpBreakdown | LpNoBreakdown>;
