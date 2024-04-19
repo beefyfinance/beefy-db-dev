@@ -3,6 +3,7 @@ import apys from './apys.js';
 import ranges from './ranges.js';
 import tvls from './tvls.js';
 import prices from './prices.js';
+import clmRanges from './clmRanges.js';
 
 export default async function (
   instance: FastifyInstance,
@@ -13,5 +14,6 @@ export default async function (
   instance.register(apys, { prefix: '/apys' });
   instance.register(tvls, { prefix: '/tvls' });
   instance.register(prices, { prefix: '/prices' });
+  instance.register(clmRanges, { prefix: '/clmRanges' });
   done();
 }

@@ -5,11 +5,11 @@ import { SNAPSHOT_INTERVAL } from '../../common/config.js';
 import { logger } from '../logger.js';
 
 export const TIME_BUCKETS = {
-  '1h_1d': { bin: '1 hour', range: { days: 1 }, maPeriod: { hours: 6 } },
-  '1h_1w': { bin: '1 hour', range: { days: 7 }, maPeriod: { hours: 48 } },
-  '1h_1M': { bin: '1 hour', range: { days: 30 }, maPeriod: { hours: 96 } },
-  '1d_1M': { bin: '1 day', range: { months: 1 }, maPeriod: { days: 10 } },
-  '1d_1Y': { bin: '1 day', range: { years: 1 }, maPeriod: { days: 30 } },
+  '1h_1d': { bin: '1 hour', range: { days: 1 }, maPeriod: { hours: 6 }, duration: 60 * 60 },
+  '1h_1w': { bin: '1 hour', range: { days: 7 }, maPeriod: { hours: 48 }, duration: 60 * 60 },
+  '1h_1M': { bin: '1 hour', range: { days: 30 }, maPeriod: { hours: 96 }, duration: 60 * 60 },
+  '1d_1M': { bin: '1 day', range: { months: 1 }, maPeriod: { days: 10 }, duration: 60 * 60 * 24 },
+  '1d_1Y': { bin: '1 day', range: { years: 1 }, maPeriod: { days: 30 }, duration: 60 * 60 * 24 },
 };
 
 export type TimeBucket = keyof typeof TIME_BUCKETS;
@@ -30,6 +30,13 @@ export function getBucketParams(bucket: TimeBucket) {
   const startTimestamp = dateToTimestamp(startDate);
   const endTimestamp = dateToTimestamp(endDate);
   return { bin, startTimestamp, endTimestamp };
+}
+
+export function getBucketDurationAndPeriod(bucket: TimeBucket) {
+  const { bin, range, maPeriod, duration } = TIME_BUCKETS[bucket];
+  const endDate = Date.now();
+  const startDate = Math.floor(sub(sub(endDate, range), maPeriod).getTime() / 1000); // extra range for moving average
+  return { bin, startDate, duration };
 }
 
 function debugQueryToString(query: string, params: (string | number)[]) {
