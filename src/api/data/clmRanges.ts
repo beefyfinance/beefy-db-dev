@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { getBucketDurationAndPeriod, TimeBucket } from './common.js';
+import { Range } from './ranges.js';
 
 export type RangedDataPoint = {
   t: number;
@@ -22,6 +23,16 @@ type RangeGraphResponse = {
     beefyCLVault: null | {
       id: string;
       snaps: RangeSnapshot[];
+    };
+  };
+};
+
+type MinMaxRangeGraphResponse = {
+  data: {
+    beefyCLVault: null | {
+      id: string;
+      minSnaphot: { v: string }[];
+      maxSnapshot: { v: string }[];
     };
   };
 };
@@ -57,4 +68,37 @@ export async function getClmRanges(
     v: snap.currentPriceOfToken0InToken1,
     max: snap.priceRangeMax1,
   }));
+}
+
+export type ClmRange = null | {
+  clm: Range;
+};
+
+export async function getGraphRanges(
+  chain: string,
+  vaultAddress: string
+): Promise<ClmRange | null> {
+  try {
+    const response = (await fetch(
+      `https://api.0xgraph.xyz/subgraphs/name/beefyfinance/clm-${chain}`,
+      {
+        body: `{\"query\":\"query HistoricRangeMaxMin {\\n  beefyCLVault(id: \\\"${vaultAddress}\\\") {\\n    id\\n    minSnaphot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: asc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n    maxSnapshot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: desc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n  }\\n}\",\"operationName\":\"HistoricRangeMaxMin\",\"extensions\":{}}`,
+        method: 'POST',
+      }
+    ).then(res => res.json())) as MinMaxRangeGraphResponse;
+
+    if (!response.data.beefyCLVault) {
+      return null;
+    }
+
+    return {
+      clm: {
+        min: parseInt(response.data.beefyCLVault.minSnaphot[0]?.v || '0'),
+        max: parseInt(response.data.beefyCLVault.maxSnapshot[0]?.v || '0'),
+      },
+    };
+  } catch (err: any) {
+    console.error(err.message);
+    return null;
+  }
 }
