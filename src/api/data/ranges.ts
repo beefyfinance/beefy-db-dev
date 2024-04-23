@@ -21,7 +21,7 @@ export async function getRanges(
 ): Promise<Ranges> {
   const requests = await Promise.all([
     getDBRanges(vaultId, oracleId),
-    chain && vaultAddress ? getGraphRanges(vaultAddress, chain) : Promise.resolve([]),
+    chain && vaultAddress ? getGraphRanges(chain, vaultAddress) : Promise.resolve([]),
   ]);
 
   const rangeResponses = await Promise.all(requests);
