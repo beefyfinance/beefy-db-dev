@@ -1,4 +1,5 @@
 import { getPool } from '../../common/db.js';
+import { getGraphRanges } from './clmRanges.js';
 
 export type Range = {
   min: number;
@@ -9,9 +10,28 @@ export type Ranges = {
   apys: Range;
   tvls: Range;
   prices: Range;
+  clm?: Range;
 };
 
-export async function getRanges(vaultId: number, oracleId: number): Promise<Ranges> {
+export async function getRanges(
+  vaultId: number,
+  oracleId: number,
+  chain?: string,
+  vaultAddress?: string
+): Promise<Ranges> {
+  const requests = await Promise.all([
+    getDBRanges(vaultId, oracleId),
+    chain && vaultAddress ? getGraphRanges(vaultAddress, chain) : Promise.resolve([]),
+  ]);
+
+  const rangeResponses = await Promise.all(requests);
+  return {
+    ...rangeResponses[0],
+    ...(rangeResponses[1] || {}),
+  };
+}
+
+async function getDBRanges(vaultId: number, oracleId: number) {
   const pool = getPool();
   const result = await pool.query(
     `
