@@ -53,7 +53,7 @@ export async function getClmRanges(
         bucketData.duration +
         ', roundedTimestamp_gte: ' +
         bucketData.startDate +
-        '}\\n      orderBy: timestamp\\n      orderDirection: asc\\n    ) {\\n      id\\n      roundedTimestamp\\n      timestamp\\n      currentPriceOfToken0InToken1\\n      priceRangeMin1\\n      priceRangeMax1\\n    }\\n  }\\n}","operationName":"HistoricRange","extensions":{}}',
+        '}\\n      orderBy: timestamp\\n      orderDirection: asc\\n    first: 1000\\n    ) {\\n      id\\n      roundedTimestamp\\n      timestamp\\n      currentPriceOfToken0InToken1\\n      priceRangeMin1\\n      priceRangeMax1\\n    }\\n  }\\n}","operationName":"HistoricRange","extensions":{}}',
       method: 'POST',
     }
   ).then(res => res.json())) as RangeGraphResponse;
