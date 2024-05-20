@@ -14,7 +14,7 @@ export const TIME_BUCKETS = {
 
 export type TimeBucket = keyof typeof TIME_BUCKETS;
 
-export type Table = 'prices' | 'apys' | 'tvls';
+export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns';
 export type IdColumn = 'oracle_id' | 'vault_id';
 
 export type DataPoint = {
@@ -82,6 +82,19 @@ export async function getOracleId(oracle: string): Promise<number | undefined> {
   );
 
   return result.rows[0]?.id;
+}
+
+export async function getOracleTokens(oracle: string): Promise<number | undefined> {
+  const pool = getPool();
+  const result = await pool.query(
+    `SELECT tokens
+     FROM price_oracles
+     WHERE oracle_id = $1
+     LIMIT 1`,
+    [oracle]
+  );
+
+  return result.rows[0]?.tokens || [];
 }
 
 export async function getVaultId(vault: string): Promise<number | undefined> {
