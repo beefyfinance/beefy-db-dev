@@ -1,6 +1,29 @@
 import fetch from 'node-fetch';
 import { getBucketDurationAndPeriod, TimeBucket } from './common.js';
 import { Range } from './ranges.js';
+import { CLM_API } from '../../common/config.js';
+import { logger } from '../logger.js';
+
+type ClmApiHistoricPricesResponse = {
+  t: number;
+  min: string;
+  v: string;
+  max: string;
+}[];
+
+function isClmApiHistoricPrice(data: any): data is ClmApiHistoricPricesResponse {
+  return (
+    data &&
+    typeof data.t === 'number' &&
+    typeof data.min === 'string' &&
+    typeof data.v === 'string' &&
+    typeof data.max === 'string'
+  );
+}
+
+function isClmApiHistoricPricesResponse(data: any): data is ClmApiHistoricPricesResponse {
+  return data && Array.isArray(data) && data.every(isClmApiHistoricPrice);
+}
 
 export type RangedDataPoint = {
   t: number;
@@ -9,96 +32,66 @@ export type RangedDataPoint = {
   max: string;
 };
 
-type RangeSnapshot = {
-  id: string;
-  roundedTimestamp: string;
-  timestamp: string;
-  currentPriceOfToken0InToken1: string;
-  priceRangeMin1: string;
-  priceRangeMax1: string;
-};
-
-type RangeGraphResponse = {
-  data: {
-    beefyCLVault: null | {
-      id: string;
-      snaps: RangeSnapshot[];
-    };
-  };
-};
-
-type MinMaxRangeGraphResponse = {
-  data: {
-    beefyCLVault: null | {
-      id: string;
-      minSnaphot: { v: string }[];
-      maxSnapshot: { v: string }[];
-    };
-  };
-};
-
-export async function getClmRanges(
-  vault_id: string,
+export async function getClmHistoricPrices(
+  vault_address: string,
   chain: string,
   bucket: TimeBucket
-): Promise<RangedDataPoint[] | null> {
+): Promise<RangedDataPoint[]> {
   const bucketData = getBucketDurationAndPeriod(bucket);
-  const response = (await fetch(
-    `https://api.0xgraph.xyz/subgraphs/name/beefyfinance/clm-${chain.toLowerCase()}`,
-    {
-      body:
-        '{"query":"query HistoricRange {\\n  beefyCLVault(id: \\"' +
-        vault_id.toLowerCase() +
-        '\\") {\\n    id\\n    snaps: snapshots(\\n      where: {period: ' +
-        bucketData.duration +
-        ', roundedTimestamp_gte: ' +
-        bucketData.startDate +
-        '}\\n      orderBy: timestamp\\n      orderDirection: asc\\n    first: 1000\\n    ) {\\n      id\\n      roundedTimestamp\\n      timestamp\\n      currentPriceOfToken0InToken1\\n      priceRangeMin1\\n      priceRangeMax1\\n    }\\n  }\\n}","operationName":"HistoricRange","extensions":{}}',
-      method: 'POST',
-    }
-  ).then(res => res.json())) as RangeGraphResponse;
-
-  if (!response.data.beefyCLVault) {
-    return null;
+  const url = `${CLM_API}/api/v1/vault/${chain}/${vault_address.toLowerCase()}/prices/${
+    bucketData.periodKey
+  }/${bucketData.startDate}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch historic prices from upstream api: ${response.status} ${response.statusText}`
+    );
   }
 
-  return response.data.beefyCLVault.snaps.map(snap => ({
-    t: parseInt(snap.roundedTimestamp),
-    min: snap.priceRangeMin1,
-    v: snap.currentPriceOfToken0InToken1,
-    max: snap.priceRangeMax1,
-  }));
+  const data = await response.json();
+  if (!isClmApiHistoricPricesResponse(data)) {
+    throw new Error('Invalid response for historic prices from upstream api');
+  }
+
+  return data;
 }
 
-export type ClmRange = null | {
+type ClmHistoricPricesRangeResponse = Range;
+
+function isClmHistoricPricesRangeResponse(data: any): data is ClmHistoricPricesRangeResponse {
+  return data && typeof data.min === 'number' && typeof data.max === 'number';
+}
+
+export type ClmRange = {
   clm: Range;
 };
 
-export async function getGraphRanges(
+export async function getClmHistoricPricesRange(
   chain: string,
-  vaultAddress: string
-): Promise<ClmRange | null> {
+  vault_address: string
+): Promise<ClmRange | undefined> {
   try {
-    const response = (await fetch(
-      `https://api.0xgraph.xyz/subgraphs/name/beefyfinance/clm-${chain}`,
-      {
-        body: `{\"query\":\"query HistoricRangeMaxMin {\\n  beefyCLVault(id: \\\"${vaultAddress}\\\") {\\n    id\\n    minSnaphot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: asc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n    maxSnapshot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: desc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n  }\\n}\",\"operationName\":\"HistoricRangeMaxMin\",\"extensions\":{}}`,
-        method: 'POST',
-      }
-    ).then(res => res.json())) as MinMaxRangeGraphResponse;
+    const bucketData = getBucketDurationAndPeriod('1d_1M');
+    const url = `${CLM_API}/api/v1/vault/${chain}/${vault_address.toLowerCase()}/prices/range/${
+      bucketData.periodKey
+    }`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch historic prices range from upstream api: ${response.status} ${response.statusText}`
+      );
+    }
 
-    if (!response.data.beefyCLVault) {
-      return null;
+    const data = await response.json();
+    if (!isClmHistoricPricesRangeResponse(data)) {
+      throw new Error('Invalid response for historic prices range from upstream api');
     }
 
     return {
-      clm: {
-        min: parseInt(response.data.beefyCLVault.minSnaphot[0]?.v || '0'),
-        max: parseInt(response.data.beefyCLVault.maxSnapshot[0]?.v || '0'),
-      },
+      clm: data,
     };
-  } catch (err: any) {
-    console.error(err.message);
-    return null;
+  } catch (err: unknown) {
+    logger.error(err);
+    return undefined;
   }
 }

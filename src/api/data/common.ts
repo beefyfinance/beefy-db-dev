@@ -36,7 +36,8 @@ export function getBucketDurationAndPeriod(bucket: TimeBucket) {
   const { bin, range, maPeriod, duration } = TIME_BUCKETS[bucket];
   const endDate = Date.now();
   const startDate = Math.floor(sub(sub(endDate, range), maPeriod).getTime() / 1000); // extra range for moving average
-  return { bin, startDate, duration };
+  const [periodKey, rangeKey] = bucket.split('_') as [string, string];
+  return { bin, startDate, duration, periodKey, rangeKey };
 }
 
 function debugQueryToString(query: string, params: (string | number)[]) {
