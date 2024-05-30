@@ -44,7 +44,7 @@ export async function getClmRanges(
 ): Promise<RangedDataPoint[] | null> {
   const bucketData = getBucketDurationAndPeriod(bucket);
   const response = (await fetch(
-    `https://api.0xgraph.xyz/subgraphs/name/beefyfinance/clm-${chain.toLowerCase()}`,
+    `https://api.goldsky.com/api/public/project_clu2walwem1qm01w40v3yhw1f/subgraphs/beefy-clm-${chain.toLowerCase()}/latest/gn`,
     {
       body:
         '{"query":"query HistoricRange {\\n  beefyCLVault(id: \\"' +
@@ -80,7 +80,7 @@ export async function getGraphRanges(
 ): Promise<ClmRange | null> {
   try {
     const response = (await fetch(
-      `https://api.0xgraph.xyz/subgraphs/name/beefyfinance/clm-${chain}`,
+      `https://api.goldsky.com/api/public/project_clu2walwem1qm01w40v3yhw1f/subgraphs/beefy-clm-${chain}/latest/gn`,
       {
         body: `{\"query\":\"query HistoricRangeMaxMin {\\n  beefyCLVault(id: \\\"${vaultAddress}\\\") {\\n    id\\n    minSnaphot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: asc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n    maxSnapshot: snapshots(\\n      where: {period: 3600}\\n      orderBy: timestamp\\n      orderDirection: desc\\n      first: 1\\n    ) {\\n      v: roundedTimestamp\\n    }\\n  }\\n}\",\"operationName\":\"HistoricRangeMaxMin\",\"extensions\":{}}`,
         method: 'POST',
