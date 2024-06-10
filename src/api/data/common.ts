@@ -40,7 +40,7 @@ export function getBucketDurationAndPeriod(bucket: TimeBucket) {
   return { bin, startDate, duration, periodKey, rangeKey };
 }
 
-function debugQueryToString(query: string, params: (string | number)[]) {
+export function debugQueryToString(query: string, params: (string | number)[]) {
   let out = query;
   for (let i = 0; i < params.length; ++i) {
     out = out.replaceAll('$' + (i + 1), `'${params[i]}'`);
