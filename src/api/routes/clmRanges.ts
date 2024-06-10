@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import S from 'fluent-json-schema';
 import { TIME_BUCKETS, TimeBucket } from '../data/common.js';
-import { getClmRanges } from '../data/clmRanges.js';
+import { getClmHistoricPrices } from '../data/clmRanges.js';
 
 export type ApysQueryString = {
   vaultAddress: string;
@@ -27,7 +27,7 @@ export default async function (
     '/',
     { schema: apysSchema },
     async (request, reply) => {
-      const result = await getClmRanges(
+      const result = await getClmHistoricPrices(
         request.query.vaultAddress,
         request.query.chain,
         request.query.bucket
