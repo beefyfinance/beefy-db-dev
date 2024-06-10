@@ -54,6 +54,17 @@ export async function updatePriceOracleRows(
       if (existingRow.tokens.length === 0) {
         return { ...existingRow, tokens: r.tokens };
       }
+      if (existingRow.tokens.length !== r.tokens.length) {
+        // new tokens can be added but not changed or removed
+        for (let i = 0; i < existingRow.tokens.length; i++) {
+          if (existingRow.tokens[i] !== r.tokens[i]) {
+            throw new Error(`Price oracle tokens mismatch for ${r.oracle_id} at index ${i}`);
+          }
+        }
+
+        // if we got here, the tokens are the same, so we can update the row
+        return { ...existingRow, tokens: r.tokens };
+      }
       return null;
     })
     .filter(r => r) as PriceOracleRow[];
