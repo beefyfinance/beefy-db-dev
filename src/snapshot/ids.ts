@@ -54,9 +54,6 @@ export async function updatePriceOracleRows(
       if (existingRow.tokens.length === 0) {
         return { ...existingRow, tokens: r.tokens };
       }
-      if (existingRow.tokens.length !== r.tokens.length) {
-        throw new Error(`Price oracle tokens length mismatch for ${r.oracle_id}`);
-      }
       return null;
     })
     .filter(r => r) as PriceOracleRow[];
