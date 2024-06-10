@@ -62,7 +62,8 @@ export async function updatePriceOracleRows(
           }
         }
 
-        // if we got here, the tokens are the same, so we can update the row
+        // if we got here, we only are adding tokens to the list
+        // so we can update the row. Existing data will still be interpretable
         return { ...existingRow, tokens: r.tokens };
       }
       return null;
