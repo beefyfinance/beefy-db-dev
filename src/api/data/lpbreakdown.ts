@@ -1,13 +1,7 @@
 import { getPool, unixToTimestamp } from '../../common/db.js';
-import {
-  DataPoint,
-  debugQueryToString,
-  getBucketParams,
-  IdColumn,
-  Table,
-  TimeBucket,
-} from './common.js';
+import { DataPoint, debugQueryToString, IdColumn, Table } from './common.js';
 import { logger } from '../logger.js';
+import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
 export async function getLpBreakdown(oracle_id: number, bucket: TimeBucket): Promise<DataPoint[]> {
   return getLpBreakdownEntries('lp_breakdowns', 'oracle_id', oracle_id, bucket);
@@ -19,7 +13,7 @@ export async function getLpBreakdownEntries(
   id: number,
   bucket: TimeBucket
 ): Promise<DataPoint[]> {
-  const { bin, startTimestamp, endTimestamp } = getBucketParams(bucket);
+  const { bin, startTimestamp, endTimestamp } = getSnapshotAlignedBucketParams(bucket);
   const pool = getPool();
 
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,

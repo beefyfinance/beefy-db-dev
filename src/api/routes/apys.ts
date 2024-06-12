@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import { getApys } from '../data/apys.js';
 import S from 'fluent-json-schema';
-import { getVaultId, TIME_BUCKETS, TimeBucket } from '../data/common.js';
+import { getVaultId } from '../data/common.js';
+import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
 export type ApysQueryString = {
   vault: string;

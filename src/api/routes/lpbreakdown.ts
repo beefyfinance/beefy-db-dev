@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import S from 'fluent-json-schema';
-import { getOracleId, getOracleTokens, TIME_BUCKETS, TimeBucket } from '../data/common.js';
+import { getOracleId, getOracleTokens } from '../data/common.js';
 import { API_RANGE_KEY } from '../../common/config.js';
 import { getLpBreakdown, getRangeLpBreakdowns } from '../data/lpbreakdown.js';
+import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
 export type LpBreakdownsQueryString = {
   oracle: string;

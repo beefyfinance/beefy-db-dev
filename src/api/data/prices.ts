@@ -1,6 +1,7 @@
-import type { DataPoint, TimeBucket } from './common.js';
+import type { DataPoint } from './common.js';
 import { getEntries } from './common.js';
 import { getPool, unixToTimestamp } from '../../common/db.js';
+import { TimeBucket } from './timeBuckets.js';
 
 export async function getPrices(oracle_id: number, bucket: TimeBucket): Promise<DataPoint[]> {
   return getEntries('prices', 'oracle_id', oracle_id, bucket);

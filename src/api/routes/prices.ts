@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import { getRangePrices, getPrices } from '../data/prices.js';
 import S from 'fluent-json-schema';
-import { getOracleId, TIME_BUCKETS, TimeBucket } from '../data/common.js';
+import { getOracleId } from '../data/common.js';
 import { API_RANGE_KEY } from '../../common/config.js';
+import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
 export type PricesQueryString = {
   oracle: string;
