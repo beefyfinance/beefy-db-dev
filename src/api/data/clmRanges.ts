@@ -1,8 +1,8 @@
 import fetch from 'node-fetch';
-import { getBucketDurationAndPeriod, TimeBucket } from './common.js';
 import { Range } from './ranges.js';
 import { CLM_API } from '../../common/config.js';
 import { logger } from '../logger.js';
+import { getBucketParams, TimeBucket } from './timeBuckets.js';
 
 type ClmApiHistoricPricesResponse = {
   t: number;
@@ -37,10 +37,10 @@ export async function getClmHistoricPrices(
   chain: string,
   bucket: TimeBucket
 ): Promise<RangedDataPoint[]> {
-  const bucketData = getBucketDurationAndPeriod(bucket);
+  const bucketData = getBucketParams(bucket);
   const url = `${CLM_API}/api/v1/vault/${chain}/${vault_address.toLowerCase()}/prices/${
-    bucketData.periodKey
-  }/${bucketData.startDate}`;
+    bucketData.sizeKey
+  }/${bucketData.startUnix}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(
@@ -71,9 +71,9 @@ export async function getClmHistoricPricesRange(
   vault_address: string
 ): Promise<ClmRange | undefined> {
   try {
-    const bucketData = getBucketDurationAndPeriod('1d_1M');
+    const bucketData = getBucketParams('1d_1M');
     const url = `${CLM_API}/api/v1/vault/${chain}/${vault_address.toLowerCase()}/prices/range/${
-      bucketData.periodKey
+      bucketData.sizeKey
     }`;
     const response = await fetch(url);
     if (!response.ok) {

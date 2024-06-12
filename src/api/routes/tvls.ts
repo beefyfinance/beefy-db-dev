@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import { getRangeTvls, getTvls } from '../data/tvls.js';
 import S from 'fluent-json-schema';
-import { getVaultId, TIME_BUCKETS, TimeBucket } from '../data/common.js';
+import { getVaultId } from '../data/common.js';
 import { API_RANGE_KEY } from '../../common/config.js';
+import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
 type TvlsQueryString = {
   vault: string;

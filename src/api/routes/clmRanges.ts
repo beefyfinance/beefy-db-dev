@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import S from 'fluent-json-schema';
-import { TIME_BUCKETS, TimeBucket } from '../data/common.js';
 import { getClmHistoricPrices } from '../data/clmRanges.js';
+import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
 export type ApysQueryString = {
   vaultAddress: string;
