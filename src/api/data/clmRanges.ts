@@ -4,20 +4,25 @@ import { CLM_API } from '../../common/config.js';
 import { logger } from '../logger.js';
 import { getBucketParams, TimeBucket } from './timeBuckets.js';
 
-type ClmApiHistoricPricesResponse = {
-  t: number;
-  min: string;
-  v: string;
-  max: string;
-}[];
+type ClmApiHistoricPrice = {
+  type: 'clm';
+  timestamp: number;
+  rangeMin: string;
+  currentPrice: string;
+  rangeMax: string;
+};
 
-function isClmApiHistoricPrice(data: any): data is ClmApiHistoricPricesResponse {
+type ClmApiHistoricPricesResponse = Array<ClmApiHistoricPrice>;
+
+function isClmApiHistoricPrice(data: any): data is ClmApiHistoricPrice {
   return (
     data &&
-    typeof data.t === 'number' &&
-    typeof data.min === 'string' &&
-    typeof data.v === 'string' &&
-    typeof data.max === 'string'
+    typeof data.timestamp === 'number' &&
+    typeof data.rangeMin === 'string' &&
+    typeof data.currentPrice === 'string' &&
+    typeof data.rangeMax === 'string' &&
+    typeof data.type === 'string' &&
+    data.type === 'clm'
   );
 }
 
@@ -53,7 +58,12 @@ export async function getClmHistoricPrices(
     throw new Error('Invalid response for historic prices from upstream api');
   }
 
-  return data;
+  return data.map(item => ({
+    t: item.timestamp,
+    min: item.rangeMin,
+    v: item.currentPrice,
+    max: item.rangeMax,
+  }));
 }
 
 type ClmHistoricPricesRangeResponse = Range;
