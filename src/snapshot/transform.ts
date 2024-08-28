@@ -1,5 +1,5 @@
-import { keyBy, mapValues } from 'lodash-es';
-import { LpBreakdown, LpBreakdownResponse } from './beefy-api/types';
+import { groupBy, keyBy, mapValues, partition } from 'lodash-es';
+import { LpBreakdown, LpBreakdownResponse, VaultResponse } from './beefy-api/types';
 import { PriceOracleRowData } from './ids';
 
 /**
@@ -93,4 +93,45 @@ export function createPriceOracleData(
 
   // lp breakdown takes precedence as it has more info
   return Object.assign(oracleIdMap, breakdownMap);
+}
+
+/**
+ * Return vaults by chains, and separate them into regular vaults or clms vaults/pools
+ */
+export function transformVaults(
+  vaults: VaultResponse,
+  govVaults: VaultResponse,
+  cowVaults: VaultResponse
+): Record<string, { clmIds: string[]; vaultIds: string[] }> {
+  const vaultsByChain = groupBy(vaults, 'chain');
+  const govVaultsByChain = groupBy(govVaults, 'chain');
+  const cowVaultsByChain = groupBy(cowVaults, 'chain');
+
+  const idsByChain: Record<string, { clmIds: string[]; vaultIds: string[] }> = {};
+
+  for (const chainId of Object.keys(vaultsByChain)) {
+    const allVaultsByChainId = (vaultsByChain[chainId] || [])
+      .concat(govVaultsByChain[chainId] || [])
+      .concat(cowVaultsByChain[chainId] || []);
+
+    const [clmIds, vaultIds] = partition(
+      allVaultsByChainId,
+      vault =>
+        //recognize clmPools
+        (vault.type === 'gov' && vault.id.endsWith('rp') && vault.strategyTypeId === 'compounds') ||
+        //recoznize clmVaults
+        (vault.type === 'standard' &&
+          vault.id.endsWith('vault') &&
+          vault.oracleId.includes('cow')) ||
+        //recognize nakedClms
+        (vault.type === 'cowcentrated' && vault.oracleId.includes('cow'))
+    );
+
+    idsByChain[chainId] = {
+      clmIds: clmIds.map(vault => vault.id),
+      vaultIds: vaultIds.map(vault => vault.id),
+    };
+  }
+
+  return idsByChain;
 }

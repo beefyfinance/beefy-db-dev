@@ -1,7 +1,8 @@
 import { getPool, unixToTimestamp } from '../../common/db.js';
+import { logger } from '../logger.js';
 import type { DataPoint } from './common.js';
-import { getEntries } from './common.js';
-import { TimeBucket } from './timeBuckets.js';
+import { debugQueryToString, getEntries } from './common.js';
+import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
 export async function getTvls(vault_id: number, bucket: TimeBucket): Promise<DataPoint[]> {
   return getEntries('tvls', 'vault_id', vault_id, bucket);
@@ -21,6 +22,34 @@ export async function getRangeTvls(
                  ORDER BY t ASC`;
   const params = [vault_id, unixToTimestamp(from), unixToTimestamp(to)];
 
+  const result = await pool.query(query, params);
+
+  return result.rows;
+}
+
+interface TvlByChainDataPoint {
+  clm_tvl: number;
+  vaults_tvl: number;
+  total_tvl: number;
+}
+
+export async function getTvlByChain(
+  chain_id: number,
+  bucket: TimeBucket
+): Promise<TvlByChainDataPoint[]> {
+  const { bin, startTimestamp, endTimestamp } = getSnapshotAlignedBucketParams(bucket);
+  const pool = getPool();
+
+  const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
+                        max(val)                                         as v
+                 FROM tvl_by_chains
+                 WHERE ${chain_id} = $1
+                   AND t BETWEEN $2 AND $3
+                 GROUP BY date_bin($4, t, $2)
+                 ORDER BY t ASC`;
+  const params = [chain_id, startTimestamp, endTimestamp, bin];
+
+  logger.trace(debugQueryToString(query, params));
   const result = await pool.query(query, params);
 
   return result.rows;

@@ -1,5 +1,13 @@
 import { getLoggerFor } from '../common/log.js';
-import { getApys, getLpBreakdown, getPrices, getTvls } from './beefy-api/api.js';
+import {
+  getApys,
+  getCowVaults,
+  getGovVaults,
+  getLpBreakdown,
+  getPrices,
+  getTvls,
+  getVaults,
+} from './beefy-api/api.js';
 import { getNextSnapshot } from './utils.js';
 import {
   createPriceOracleData,
@@ -8,6 +16,7 @@ import {
   transformLpBreakdownToPrices,
   transformPrices,
   transformTvl,
+  transformVaults,
 } from './transform.js';
 import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
@@ -24,11 +33,22 @@ async function performUpdate() {
 
   // All or nothing fetch
   const cacheBuster = nextSnapshot.toString();
-  const [priceResponse, lbBreakdownResponse, apyResponse, tvlResponse] = await Promise.all([
+  const [
+    priceResponse,
+    lbBreakdownResponse,
+    apyResponse,
+    tvlResponse,
+    vaultsResponse,
+    govVaultsResponse,
+    cowVaultsResponse,
+  ] = await Promise.all([
     getPrices(cacheBuster),
     getLpBreakdown(cacheBuster),
     getApys(cacheBuster),
     getTvls(cacheBuster),
+    getVaults(cacheBuster),
+    getGovVaults(cacheBuster),
+    getCowVaults(cacheBuster),
   ]);
 
   // Remove invalid data / transform to same format
@@ -37,6 +57,7 @@ async function performUpdate() {
   const lbBreakdownData = transformLpBreakdown(lbBreakdownResponse);
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
+  const vaultsByChain = transformVaults(vaultsResponse, govVaultsResponse, cowVaultsResponse);
 
   const priceOracleRows = createPriceOracleData(
     Object.keys(priceData).concat(Object.keys(lpData)),
@@ -58,6 +79,7 @@ async function performUpdate() {
       insertOracleLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, oracleData),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
+      insertTvlByChainData(trx, 'tvl_by_chains', nextSnapshot, tvlData, vaultsByChain),
     ]);
   });
 
@@ -147,4 +169,45 @@ async function insertOracleLpBreakdownData(
       total_supply: parseFloat(val.totalSupply),
     }))
   );
+}
+
+async function insertTvlByChainData(
+  builder: Knex,
+  table: 'tvl_by_chains',
+  snapshot: number,
+  data: Record<string, number>,
+  chainIds: Record<string, { clmIds: string[]; vaultIds: string[] }>
+) {
+  const snapshotTimestamp = unixToTimestamp(snapshot);
+
+  await builder.table(table).insert(
+    Object.keys(chainIds).map(chainId => ({
+      chain_id: chainId,
+      t: snapshotTimestamp,
+      ...getTvlByChainId(data, chainIds[chainId] || { clmIds: [], vaultIds: [] }),
+    }))
+  );
+}
+
+function getTvlByChainId(
+  tvlData: Record<string, number>,
+  vaultsByChain: { clmIds: string[]; vaultIds: string[] }
+) {
+  const commonVaultsTvl = vaultsByChain.vaultIds.reduce((acc, vaultId) => {
+    acc += tvlData[vaultId] || 0;
+
+    return acc;
+  }, 0);
+
+  const clmVaultsTvl = vaultsByChain.clmIds.reduce((acc, clmId) => {
+    acc += tvlData[clmId] || 0;
+
+    return acc;
+  }, 0);
+
+  return {
+    clms_tvl: clmVaultsTvl,
+    vaults_tvl: commonVaultsTvl,
+    total_tvl: clmVaultsTvl + commonVaultsTvl,
+  };
 }

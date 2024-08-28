@@ -2,8 +2,8 @@ import { getPool } from '../../common/db.js';
 import { logger } from '../logger.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
-export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns';
-export type IdColumn = 'oracle_id' | 'vault_id';
+export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chains';
+export type IdColumn = 'oracle_id' | 'vault_id' | 'chain_id';
 
 export type DataPoint = {
   t: number;
@@ -76,6 +76,19 @@ export async function getVaultId(vault: string): Promise<number | undefined> {
      WHERE vault_id = $1
      LIMIT 1`,
     [vault]
+  );
+
+  return result.rows[0]?.id;
+}
+
+export async function getChainId(chain: string): Promise<number | undefined> {
+  const pool = getPool();
+  const result = await pool.query(
+    `SELECT id
+     FROM chain_ids
+     WHERE chain_id = $1
+     LIMIT 1`,
+    [chain]
   );
 
   return result.rows[0]?.id;
