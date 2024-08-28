@@ -1,5 +1,5 @@
-import { groupBy, keyBy, mapValues, partition } from 'lodash-es';
-import { LpBreakdown, LpBreakdownResponse, VaultResponse } from './beefy-api/types';
+import { groupBy, keyBy, mapValues } from 'lodash-es';
+import { LpBreakdown, LpBreakdownResponse, Vault, VaultResponse } from './beefy-api/types';
 import { PriceOracleRowData } from './ids';
 
 /**
@@ -101,37 +101,77 @@ export function createPriceOracleData(
 export function transformVaults(
   vaults: VaultResponse,
   govVaults: VaultResponse,
-  cowVaults: VaultResponse
-): Record<string, { clmIds: string[]; vaultIds: string[] }> {
+  cowVaults: VaultResponse,
+  tvlData: Record<string, number>
+): Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }> {
   const vaultsByChain = groupBy(vaults, 'chain');
   const govVaultsByChain = groupBy(govVaults, 'chain');
   const cowVaultsByChain = groupBy(cowVaults, 'chain');
 
-  const idsByChain: Record<string, { clmIds: string[]; vaultIds: string[] }> = {};
+  const idsByChain: Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }> =
+    {};
 
   for (const chainId of Object.keys(vaultsByChain)) {
-    const allVaultsByChainId = (vaultsByChain[chainId] || [])
-      .concat(govVaultsByChain[chainId] || [])
-      .concat(cowVaultsByChain[chainId] || []);
+    const cowVaults = cowVaultsByChain[chainId] || [];
+    const vaults = vaultsByChain[chainId] || [];
+    const govVaults = govVaultsByChain[chainId] || [];
 
-    const [clmIds, vaultIds] = partition(
-      allVaultsByChainId,
-      vault =>
-        //recognize clmPools
-        (vault.type === 'gov' && vault.id.endsWith('rp') && vault.strategyTypeId === 'compounds') ||
-        //recoznize clmVaults
-        (vault.type === 'standard' &&
-          vault.id.endsWith('vault') &&
-          vault.oracleId.includes('cow')) ||
-        //recognize nakedClms
-        (vault.type === 'cowcentrated' && vault.oracleId.includes('cow'))
-    );
+    const clmIds = cowVaults.map(vault => vault.id);
 
-    idsByChain[chainId] = {
-      clmIds: clmIds.map(vault => vault.id),
-      vaultIds: vaultIds.map(vault => vault.id),
-    };
+    for (const cowVault of cowVaults) {
+      const vault = vaults.find(
+        (vault: Vault) => vault.tokenAddress === cowVault.earnedTokenAddress
+      );
+      if (vault) {
+        clmIds.push(vault.id);
+      }
+      const govVault = govVaults.find(
+        (vault: Vault) => vault.tokenAddress === cowVault.earnedTokenAddress
+      );
+      if (govVault) {
+        clmIds.push(govVault.id);
+      }
+    }
+
+    const vaultIds = vaults.filter(vault => !clmIds.includes(vault.id)).map(vault => vault.id);
+
+    const govVaultIds = govVaults
+      .filter(vault => !clmIds.includes(vault.id))
+      .map(vault => vault.id);
+
+    idsByChain[chainId] = getTvlByChainId(tvlData, { clmIds, vaultIds, govVaultIds });
   }
 
   return idsByChain;
+}
+
+function getTvlByChainId(
+  tvlData: Record<string, number>,
+  vaultsByChain: { clmIds: string[]; vaultIds: string[]; govVaultIds: string[] }
+) {
+  const { clmIds, vaultIds, govVaultIds } = vaultsByChain;
+  const vaultsTvl = vaultIds.reduce((acc, vaultId) => {
+    acc += tvlData[vaultId] || 0;
+
+    return acc;
+  }, 0);
+
+  const clmVaultsTvl = clmIds.reduce((acc, clmId) => {
+    acc += tvlData[clmId] || 0;
+
+    return acc;
+  }, 0);
+
+  const govVaultsTvl = govVaultIds.reduce((acc, clmId) => {
+    acc += tvlData[clmId] || 0;
+
+    return acc;
+  }, 0);
+
+  return {
+    clms_tvl: clmVaultsTvl,
+    vaults_tvl: vaultsTvl,
+    gov_vaults_tvl: govVaultsTvl,
+    total_tvl: clmVaultsTvl + vaultsTvl + govVaultsTvl,
+  };
 }

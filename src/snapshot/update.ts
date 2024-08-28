@@ -24,6 +24,7 @@ import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown } from './beefy-api/types.js';
+import { getChainId } from '../api/data/common.js';
 
 const logger = getLoggerFor('snapshot');
 
@@ -57,7 +58,12 @@ async function performUpdate() {
   const lbBreakdownData = transformLpBreakdown(lbBreakdownResponse);
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
-  const vaultsByChain = transformVaults(vaultsResponse, govVaultsResponse, cowVaultsResponse);
+  const vaultsByChain = transformVaults(
+    vaultsResponse,
+    govVaultsResponse,
+    cowVaultsResponse,
+    tvlData
+  );
 
   const priceOracleRows = createPriceOracleData(
     Object.keys(priceData).concat(Object.keys(lpData)),
@@ -79,7 +85,7 @@ async function performUpdate() {
       insertOracleLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, oracleData),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
-      insertTvlByChainData(trx, 'tvl_by_chains', nextSnapshot, tvlData, vaultsByChain),
+      insertTvlByChainData(trx, 'tvl_by_chains', nextSnapshot, vaultsByChain),
     ]);
   });
 
@@ -175,39 +181,15 @@ async function insertTvlByChainData(
   builder: Knex,
   table: 'tvl_by_chains',
   snapshot: number,
-  data: Record<string, number>,
-  chainIds: Record<string, { clmIds: string[]; vaultIds: string[] }>
+  chainIds: Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
   await builder.table(table).insert(
-    Object.keys(chainIds).map(chainId => ({
-      chain_id: chainId,
+    Object.entries(chainIds).map(([chainId, val]) => ({
+      chain_id: getChainId(chainId),
       t: snapshotTimestamp,
-      ...getTvlByChainId(data, chainIds[chainId] || { clmIds: [], vaultIds: [] }),
+      ...val,
     }))
   );
-}
-
-function getTvlByChainId(
-  tvlData: Record<string, number>,
-  vaultsByChain: { clmIds: string[]; vaultIds: string[] }
-) {
-  const commonVaultsTvl = vaultsByChain.vaultIds.reduce((acc, vaultId) => {
-    acc += tvlData[vaultId] || 0;
-
-    return acc;
-  }, 0);
-
-  const clmVaultsTvl = vaultsByChain.clmIds.reduce((acc, clmId) => {
-    acc += tvlData[clmId] || 0;
-
-    return acc;
-  }, 0);
-
-  return {
-    clms_tvl: clmVaultsTvl,
-    vaults_tvl: commonVaultsTvl,
-    total_tvl: clmVaultsTvl + commonVaultsTvl,
-  };
 }

@@ -19,4 +19,6 @@ export interface Vault {
   type: string;
   strategyTypeId: string;
   oracleId: string;
+  tokenAddress: string;
+  earnedTokenAddress: string;
 }
