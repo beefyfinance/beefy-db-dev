@@ -173,6 +173,33 @@ as above for prices
 
 as above for prices
 
+
+### Tvl by Chains
+
+#### Url
+
+`/api/v2/tvlByChains?chain={chainId}&bucket={bucket}`
+
+#### Query string
+
+`chain` - a chain id, e.g. `arbitrum`
+
+`bucket` - as above
+
+### Response
+
+```json
+[
+  {
+    "t": 1671244200,
+    "total_tvl": 100000000,
+    "clm_tvl": 50000000,
+    "vault_tvl": 30000000,
+    "gov_tvl": 20000000,
+  }
+]
+```
+
 ## Migrations
 
 Database migrations are handled by [postgrator](https://github.com/rickbergfalk/postgrator) and are available in `/migrations/`
