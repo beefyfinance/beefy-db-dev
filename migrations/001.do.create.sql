@@ -25,13 +25,9 @@ CREATE TABLE IF NOT EXISTS tvls
     PRIMARY KEY (id)
 );
 
-
-
-
 CREATE INDEX IF NOT EXISTS apys_t_idx ON apys (t);
 CREATE INDEX IF NOT EXISTS prices_t_idx ON prices (t);
 CREATE INDEX IF NOT EXISTS tvls_t_idx ON tvls (t);
-
 
 CREATE INDEX IF NOT EXISTS apys_name_idx ON apys (name);
 CREATE INDEX IF NOT EXISTS prices_name_idx ON prices (name);

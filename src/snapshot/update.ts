@@ -22,9 +22,8 @@ import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
-import { PriceOracleRow, updatePriceOracleRows, updateVaultIds } from './ids.js';
+import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown } from './beefy-api/types.js';
-import { getChainId } from '../api/data/common.js';
 
 const logger = getLoggerFor('snapshot');
 
@@ -71,9 +70,10 @@ async function performUpdate() {
   );
 
   // Get vault and oracle ids
-  const [vaultIds, oracleData] = await Promise.all([
+  const [vaultIds, oracleData, chainIds] = await Promise.all([
     updateVaultIds(Object.keys(apyData).concat(Object.keys(tvlData))),
     updatePriceOracleRows(Object.values(priceOracleRows)),
+    updateChainIds(Object.keys(vaultsByChain)),
   ]);
 
   // All or nothing insert
@@ -85,7 +85,7 @@ async function performUpdate() {
       insertOracleLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, oracleData),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
-      insertTvlByChainData(trx, 'tvl_by_chains', nextSnapshot, vaultsByChain),
+      insertTvlByChainData(trx, 'tvl_by_chain', nextSnapshot, vaultsByChain, chainIds),
     ]);
   });
 
@@ -179,15 +179,16 @@ async function insertOracleLpBreakdownData(
 
 async function insertTvlByChainData(
   builder: Knex,
-  table: 'tvl_by_chains',
+  table: 'tvl_by_chain',
   snapshot: number,
-  chainIds: Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }>
+  data: Record<string, { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }>,
+  chainIds: Record<string, number>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
   await builder.table(table).insert(
-    Object.entries(chainIds).map(([chainId, val]) => ({
-      chain_id: getChainId(chainId),
+    Object.entries(data).map(([chainId, val]) => ({
+      chain_id: chainIds[chainId], // map string to numeric id
       t: snapshotTimestamp,
       ...val,
     }))

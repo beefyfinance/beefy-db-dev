@@ -99,6 +99,3 @@ DROP TABLE apys;
 
 -- Rename the new table
 ALTER TABLE apys_new RENAME TO apys;
-
-
-

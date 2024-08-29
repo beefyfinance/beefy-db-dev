@@ -42,7 +42,7 @@ export async function getTvlByChain(
 
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
                         max(val)                                         as v
-                 FROM tvl_by_chains
+                 FROM tvl_by_chain
                  WHERE ${chain_id} = $1
                    AND t BETWEEN $2 AND $3
                  GROUP BY date_bin($4, t, $2)

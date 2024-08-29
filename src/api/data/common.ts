@@ -2,7 +2,7 @@ import { getPool } from '../../common/db.js';
 import { logger } from '../logger.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
-export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chains';
+export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chain';
 export type IdColumn = 'oracle_id' | 'vault_id' | 'chain_id';
 
 export type DataPoint = {

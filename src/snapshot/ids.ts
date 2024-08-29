@@ -29,6 +29,34 @@ async function insertVaultIds(vault_ids: string[]): Promise<void> {
   await builder.table('vault_ids').insert(vault_ids.map(vault_id => ({ vault_id })));
 }
 
+export async function updateChainIds(chain_ids: string[]): Promise<Record<string, number>> {
+  const existingMap = await getChainIds();
+  const newChainIds = uniq(chain_ids).filter(chain_id => !existingMap[chain_id]);
+
+  if (newChainIds.length === 0) {
+    return existingMap;
+  }
+
+  await insertChainIds(newChainIds);
+
+  return getChainIds();
+}
+
+async function getChainIds(): Promise<Record<string, number>> {
+  const pool = getPool();
+  const result = await pool.query(`SELECT id, chain_id
+                                   FROM chain_ids`);
+  return result.rows.reduce((acc, row) => {
+    acc[row.chain_id] = Number(row.id);
+    return acc;
+  }, {} as Record<string, number>);
+}
+
+async function insertChainIds(chain_ids: string[]): Promise<void> {
+  const builder = await getQueryBuilder();
+  await builder.table('chain_ids').insert(chain_ids.map(chain_id => ({ chain_id })));
+}
+
 export type PriceOracleRow = {
   id: number;
   oracle_id: string;

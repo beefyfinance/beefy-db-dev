@@ -103,13 +103,15 @@ export function transformVaults(
   govVaults: VaultResponse,
   cowVaults: VaultResponse,
   tvlData: Record<string, number>
-): Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }> {
+): Record<string, { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }> {
   const vaultsByChain = groupBy(vaults, 'chain');
   const govVaultsByChain = groupBy(govVaults, 'chain');
   const cowVaultsByChain = groupBy(cowVaults, 'chain');
 
-  const idsByChain: Record<string, { total_tvl: number; clms_tvl: number; vaults_tvl: number }> =
-    {};
+  const idsByChain: Record<
+    string,
+    { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }
+  > = {};
 
   for (const chainId of Object.keys(vaultsByChain)) {
     const cowVaults = cowVaultsByChain[chainId] || [];
@@ -169,9 +171,9 @@ function getTvlByChainId(
   }, 0);
 
   return {
-    clms_tvl: clmVaultsTvl,
-    vaults_tvl: vaultsTvl,
-    gov_vaults_tvl: govVaultsTvl,
+    clm_tvl: clmVaultsTvl,
+    vault_tvl: vaultsTvl,
+    gov_tvl: govVaultsTvl,
     total_tvl: clmVaultsTvl + vaultsTvl + govVaultsTvl,
   };
 }
