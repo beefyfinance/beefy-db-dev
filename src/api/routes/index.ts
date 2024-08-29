@@ -5,6 +5,7 @@ import tvls from './tvls.js';
 import prices from './prices.js';
 import clmRanges from './clmRanges.js';
 import lpBreakdown from './lpbreakdown.js';
+import tvlByChains from './tvlByChains.js';
 
 export default async function (
   instance: FastifyInstance,
@@ -17,5 +18,6 @@ export default async function (
   instance.register(prices, { prefix: '/prices' });
   instance.register(clmRanges, { prefix: '/clmRanges' });
   instance.register(lpBreakdown, { prefix: '/lpBreakdown' });
+  instance.register(tvlByChains, { prefix: '/tvlByChains' });
   done();
 }

@@ -28,12 +28,13 @@ export async function getRangeTvls(
 }
 
 interface TvlByChainDataPoint {
+  total_tvl: number;
   clm_tvl: number;
   vaults_tvl: number;
-  total_tvl: number;
+  gov_tvl: number;
 }
 
-export async function getTvlByChain(
+export async function getChainTvls(
   chain_id: number,
   bucket: TimeBucket
 ): Promise<TvlByChainDataPoint[]> {
@@ -41,12 +42,16 @@ export async function getTvlByChain(
   const pool = getPool();
 
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
-                        max(val)                                         as v
+                        max(total_tvl)                           as total_tvl,
+                        max(clm_tvl)                               as clm_tvl,
+                        max(vault_tvl)                           as vault_tvl,
+                        max(gov_tvl)                                as gov_tvl
                  FROM tvl_by_chain
-                 WHERE ${chain_id} = $1
+                 WHERE chain_id = $1
                    AND t BETWEEN $2 AND $3
                  GROUP BY date_bin($4, t, $2)
                  ORDER BY t ASC`;
+
   const params = [chain_id, startTimestamp, endTimestamp, bin];
 
   logger.trace(debugQueryToString(query, params));
