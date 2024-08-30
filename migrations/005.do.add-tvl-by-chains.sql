@@ -12,12 +12,12 @@ CREATE UNIQUE INDEX idx_chain_ids ON chain_ids (chain_id ASC NULLS LAST);
 -- Create table to store TVL by chain over time
 CREATE TABLE tvl_by_chain
 (
-    chain_id  integer                  NOT NULL REFERENCES chain_ids (id),
-    t         timestamp with time zone NOT NULL,
-    total_tvl DOUBLE PRECISION,
-    clm_tvl   DOUBLE PRECISION,
-    vault_tvl DOUBLE PRECISION,
-    gov_tvl   DOUBLE PRECISION
+    chain_id integer                  NOT NULL REFERENCES chain_ids (id),
+    t        timestamp with time zone NOT NULL,
+    total    DOUBLE PRECISION,
+    vault    DOUBLE PRECISION,
+    gov      DOUBLE PRECISION,
+    clm      DOUBLE PRECISION
 );
 
 -- Ensure there is only one entry per chain_id/timestamp pair

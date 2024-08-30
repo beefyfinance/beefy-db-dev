@@ -9,7 +9,7 @@ import type {
 
 async function get<T>(path: string, cacheBuster: string): Promise<T> {
   const response = await fetch(`https://api.beefy.finance/${path}?_=${cacheBuster}`);
-  return response.json() as T;
+  return (await response.json()) as T;
 }
 
 export async function getApys(cacheBuster: string): Promise<ApyResponse> {

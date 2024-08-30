@@ -1,35 +1,32 @@
-import createLogger, { Logger, LoggerOptions } from 'pino';
+import pino, { type Logger, type LoggerOptions } from 'pino';
+import pinoPretty from 'pino-pretty';
 import { NODE_ENV } from './config.js';
 
 const validLevels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'];
 const defaultLevel = 'info';
-const level =
+const LOG_LEVEL =
   process.env['LOG_LEVEL'] && validLevels.includes(process.env['LOG_LEVEL'])
     ? process.env['LOG_LEVEL']
     : defaultLevel;
 
 const loggers: Record<string, Logger> = {};
 
-export function getLoggerOptionsFor(name: string, extraOptions: LoggerOptions = {}) {
+export function createDefaultLogger(name: string) {
   const options: LoggerOptions = {
     name,
-    level,
-    ...extraOptions,
+    level: LOG_LEVEL,
   };
 
   if (NODE_ENV === 'development') {
-    options.transport = {
-      target: 'pino-pretty',
-    };
+    // pretty sync mode in dev so pino output is correct order with other output to stdout
+    return pino(options, pinoPretty({ sync: true }));
   }
 
-  return options;
+  return pino(options);
 }
 
-export function getLoggerFor(name: string, extraOptions: LoggerOptions = {}) {
-  if (!loggers[name]) {
-    loggers[name] = createLogger(getLoggerOptionsFor(name, extraOptions));
-  }
+export const defaultLogger = createDefaultLogger('beefy-db-dev');
 
-  return loggers[name]!;
+export function getLoggerFor(name: string) {
+  return (loggers[name] ??= defaultLogger.child({ name }));
 }

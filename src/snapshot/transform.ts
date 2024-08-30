@@ -1,6 +1,16 @@
-import { groupBy, keyBy, mapValues } from 'lodash-es';
-import { LpBreakdown, LpBreakdownResponse, Vault, VaultResponse } from './beefy-api/types';
+import { groupBy, keyBy, mapValues, uniq } from 'lodash-es';
+import {
+  LpBreakdown,
+  LpBreakdownResponse,
+  type TvlBreakdown,
+  type TvlBreakdownByChain,
+  type TvlByVaultId,
+  type TvlNonClmVaultTypes,
+  type VaultIdsByType,
+  type VaultsByType,
+} from './beefy-api/types';
 import { PriceOracleRowData } from './ids';
+import { fromArray } from './utils.js';
 
 /**
  * Convert strings to numbers and return undefined if null, NaN and Infinity
@@ -73,7 +83,7 @@ export const transformLpBreakdownToPrices = (
 /**
  * Convert strings to numbers and remove undefined, null, NaN and Infinity, the flattens the object
  */
-export function transformTvl(input: Record<string, Record<string, any>>): Record<string, number> {
+export function transformTvl(input: Record<string, Record<string, any>>): TvlByVaultId {
   const byChainId = mapValues(input, value => transformNumberRecord(value));
   return Object.assign({}, ...Object.values(byChainId));
 }
@@ -96,84 +106,55 @@ export function createPriceOracleData(
 }
 
 /**
- * Return vaults by chains, and separate them into regular vaults or clms vaults/pools
+ * Return tvl by chain, in total, and split by clm, vault and gov
  */
-export function transformVaults(
-  vaults: VaultResponse,
-  govVaults: VaultResponse,
-  cowVaults: VaultResponse,
-  tvlData: Record<string, number>
-): Record<string, { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }> {
-  const vaultsByChain = groupBy(vaults, 'chain');
-  const govVaultsByChain = groupBy(govVaults, 'chain');
-  const cowVaultsByChain = groupBy(cowVaults, 'chain');
+export function transformVaultsTvlToTvlByChain(
+  vaultsByType: VaultsByType,
+  tvlByVaultId: TvlByVaultId
+): TvlBreakdownByChain {
+  const vaultsByTypeByChain = mapValues(vaultsByType, vaults => groupBy(vaults, v => v.network));
+  const allChainIds = uniq(Object.values(vaultsByTypeByChain).flatMap(Object.keys));
+  const nonClmTypes = ['gov', 'vault'] as const satisfies TvlNonClmVaultTypes;
 
-  const idsByChain: Record<
-    string,
-    { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }
-  > = {};
+  return fromArray(allChainIds, (chainId): TvlBreakdown => {
+    const clmVaults = vaultsByTypeByChain.clm[chainId] || [];
+    const clmAddresses = new Set(clmVaults.map(vault => vault.earnContractAddress));
+    const vaultIdsByType = {
+      clm: clmVaults.map(vault => vault.id),
+      ...fromArray(nonClmTypes, (): string[] => []),
+    };
 
-  for (const chainId of Object.keys(vaultsByChain)) {
-    const cowVaults = cowVaultsByChain[chainId] || [];
-    const vaults = vaultsByChain[chainId] || [];
-    const govVaults = govVaultsByChain[chainId] || [];
-
-    const clmIds = cowVaults.map(vault => vault.id);
-
-    for (const cowVault of cowVaults) {
-      const vault = vaults.find(
-        (vault: Vault) => vault.tokenAddress === cowVault.earnedTokenAddress
-      );
-      if (vault) {
-        clmIds.push(vault.id);
-      }
-      const govVault = govVaults.find(
-        (vault: Vault) => vault.tokenAddress === cowVault.earnedTokenAddress
-      );
-      if (govVault) {
-        clmIds.push(govVault.id);
+    for (const type of nonClmTypes) {
+      const vaults = vaultsByTypeByChain[type][chainId] || [];
+      for (const vault of vaults) {
+        if (clmAddresses.has(vault.tokenAddress)) {
+          vaultIdsByType.clm.push(vault.id);
+        } else {
+          vaultIdsByType[type].push(vault.id);
+        }
       }
     }
 
-    const vaultIds = vaults.filter(vault => !clmIds.includes(vault.id)).map(vault => vault.id);
-
-    const govVaultIds = govVaults
-      .filter(vault => !clmIds.includes(vault.id))
-      .map(vault => vault.id);
-
-    idsByChain[chainId] = getTvlByChainId(tvlData, { clmIds, vaultIds, govVaultIds });
-  }
-
-  return idsByChain;
+    return getTvlBreakdownForChain(tvlByVaultId, vaultIdsByType);
+  });
 }
 
-function getTvlByChainId(
-  tvlData: Record<string, number>,
-  vaultsByChain: { clmIds: string[]; vaultIds: string[]; govVaultIds: string[] }
-) {
-  const { clmIds, vaultIds, govVaultIds } = vaultsByChain;
-  const vaultsTvl = vaultIds.reduce((acc, vaultId) => {
-    acc += tvlData[vaultId] || 0;
-
-    return acc;
-  }, 0);
-
-  const clmVaultsTvl = clmIds.reduce((acc, clmId) => {
-    acc += tvlData[clmId] || 0;
-
-    return acc;
-  }, 0);
-
-  const govVaultsTvl = govVaultIds.reduce((acc, clmId) => {
-    acc += tvlData[clmId] || 0;
-
-    return acc;
-  }, 0);
+/**
+ * Sum tvl for each type of vault, add sum them up to get total for the chain
+ */
+function getTvlBreakdownForChain(
+  tvlByVaultId: TvlByVaultId,
+  vaultsByType: VaultIdsByType
+): TvlBreakdown {
+  const tvlByType = mapValues(vaultsByType, vaultIds =>
+    vaultIds.reduce((acc, vaultId) => {
+      acc += tvlByVaultId[vaultId] || 0;
+      return acc;
+    }, 0)
+  );
 
   return {
-    clm_tvl: clmVaultsTvl,
-    vault_tvl: vaultsTvl,
-    gov_tvl: govVaultsTvl,
-    total_tvl: clmVaultsTvl + vaultsTvl + govVaultsTvl,
+    ...tvlByType,
+    total: Object.values(tvlByType).reduce((total, typeTvl) => total + typeTvl, 0),
   };
 }

@@ -42,7 +42,7 @@ export async function updateChainIds(chain_ids: string[]): Promise<Record<string
   return getChainIds();
 }
 
-async function getChainIds(): Promise<Record<string, number>> {
+export async function getChainIds(): Promise<Record<string, number>> {
   const pool = getPool();
   const result = await pool.query(`SELECT id, chain_id
                                    FROM chain_ids`);
@@ -119,8 +119,8 @@ export async function updatePriceOracleRows(
 async function getPriceOraclesRows(): Promise<Record<string, PriceOracleRow>> {
   const pool = getPool();
   const result = await pool.query<PriceOracleRow>(`
-    SELECT id, oracle_id, tokens
-    FROM price_oracles
+      SELECT id, oracle_id, tokens
+      FROM price_oracles
   `);
   return keyBy(result.rows, 'oracle_id');
 }

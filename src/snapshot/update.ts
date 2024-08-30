@@ -8,7 +8,7 @@ import {
   getTvls,
   getVaults,
 } from './beefy-api/api.js';
-import { getNextSnapshot } from './utils.js';
+import { getNextSnapshot, getOrThrow } from './utils.js';
 import {
   createPriceOracleData,
   transformApy,
@@ -16,14 +16,20 @@ import {
   transformLpBreakdownToPrices,
   transformPrices,
   transformTvl,
-  transformVaults,
+  transformVaultsTvlToTvlByChain,
 } from './transform.js';
 import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
 import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
-import { LpBreakdown } from './beefy-api/types.js';
+import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
+import type {
+  LpBreakdownRecord,
+  OracleIdRecord,
+  TvlByChainRecord,
+  VaultIdRecord,
+} from '../common/records.js';
 
 const logger = getLoggerFor('snapshot');
 
@@ -57,10 +63,8 @@ async function performUpdate() {
   const lbBreakdownData = transformLpBreakdown(lbBreakdownResponse);
   const apyData = transformApy(apyResponse);
   const tvlData = transformTvl(tvlResponse);
-  const vaultsByChain = transformVaults(
-    vaultsResponse,
-    govVaultsResponse,
-    cowVaultsResponse,
+  const tvlByChainData = transformVaultsTvlToTvlByChain(
+    { vault: vaultsResponse, gov: govVaultsResponse, clm: cowVaultsResponse },
     tvlData
   );
 
@@ -73,7 +77,7 @@ async function performUpdate() {
   const [vaultIds, oracleData, chainIds] = await Promise.all([
     updateVaultIds(Object.keys(apyData).concat(Object.keys(tvlData))),
     updatePriceOracleRows(Object.values(priceOracleRows)),
-    updateChainIds(Object.keys(vaultsByChain)),
+    updateChainIds(Object.keys(tvlByChainData)),
   ]);
 
   // All or nothing insert
@@ -85,7 +89,7 @@ async function performUpdate() {
       insertOracleLpBreakdownData(trx, 'lp_breakdowns', nextSnapshot, lbBreakdownData, oracleData),
       insertVaultIdData(trx, 'apys', nextSnapshot, apyData, vaultIds),
       insertVaultIdData(trx, 'tvls', nextSnapshot, tvlData, vaultIds),
-      insertTvlByChainData(trx, 'tvl_by_chain', nextSnapshot, vaultsByChain, chainIds),
+      insertTvlByChainData(trx, 'tvl_by_chain', nextSnapshot, tvlByChainData, chainIds),
     ]);
   });
 
@@ -131,9 +135,9 @@ async function insertOracleData(
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
-  await builder.table(table).insert(
+  await builder.table<OracleIdRecord>(table).insert(
     Object.entries(data).map(([oracle_id, val]) => ({
-      oracle_id: oracleRows[oracle_id]?.id, // map string to numeric id
+      oracle_id: getOrThrow(oracleRows, oracle_id).id, // map string to numeric id
       t: snapshotTimestamp,
       val,
     }))
@@ -149,9 +153,9 @@ async function insertVaultIdData(
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
-  await builder.table(table).insert(
+  await builder.table<VaultIdRecord>(table).insert(
     Object.entries(data).map(([vault_id, val]) => ({
-      vault_id: vaultIds[vault_id], // map string to numeric id
+      vault_id: getOrThrow(vaultIds, vault_id), // map string to numeric id
       t: snapshotTimestamp,
       val,
     }))
@@ -167,9 +171,9 @@ async function insertOracleLpBreakdownData(
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
-  await builder.table(table).insert(
+  await builder.table<LpBreakdownRecord>(table).insert(
     Object.entries(data).map(([oracle_id, val]) => ({
-      oracle_id: oracleRows[oracle_id]?.id, // map string to numeric id
+      oracle_id: getOrThrow(oracleRows, oracle_id).id, // map string to numeric id
       t: snapshotTimestamp,
       balances: val.balances,
       total_supply: parseFloat(val.totalSupply),
@@ -181,14 +185,14 @@ async function insertTvlByChainData(
   builder: Knex,
   table: 'tvl_by_chain',
   snapshot: number,
-  data: Record<string, { total_tvl: number; clm_tvl: number; vault_tvl: number; gov_tvl: number }>,
+  tvlBreakdownByChain: TvlBreakdownByChain,
   chainIds: Record<string, number>
 ) {
   const snapshotTimestamp = unixToTimestamp(snapshot);
 
-  await builder.table(table).insert(
-    Object.entries(data).map(([chainId, val]) => ({
-      chain_id: chainIds[chainId], // map string to numeric id
+  await builder.table<TvlByChainRecord>(table).insert(
+    Object.entries(tvlBreakdownByChain).map(([chainId, val]) => ({
+      chain_id: getOrThrow(chainIds, chainId), // map string to numeric id
       t: snapshotTimestamp,
       ...val,
     }))

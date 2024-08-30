@@ -1,5 +1,4 @@
 import { getPool } from '../../common/db.js';
-import { logger } from '../logger.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
 export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chain';
@@ -36,7 +35,6 @@ export async function getEntries(
                  ORDER BY t ASC`;
   const params = [id, startTimestamp, endTimestamp, bin];
 
-  logger.trace(debugQueryToString(query, params));
   const result = await pool.query(query, params);
 
   return result.rows;

@@ -1,20 +1,19 @@
 import { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
 import S from 'fluent-json-schema';
-import { getChainId } from '../data/common.js';
-import { getChainTvls } from '../data/tvls.js';
+import { getTvlForAllChains } from '../data/tvls.js';
 import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
 
-type TvlByChainQueryString = {
-  chain: string;
+type TvlByChainsQueryString = {
   bucket: TimeBucket;
 };
 
-const tvlByChainQueryString = S.object()
-  .prop('chain', S.string().required())
-  .prop('bucket', S.string().enum(Object.keys(TIME_BUCKETS)).required());
+const tvlByChainsQueryString = S.object().prop(
+  'bucket',
+  S.string().enum(Object.keys(TIME_BUCKETS)).required()
+);
 
-const tvlByChainSchema: FastifySchema = {
-  querystring: tvlByChainQueryString,
+const tvlByChainsSchema: FastifySchema = {
+  querystring: tvlByChainsQueryString,
 };
 
 export default async function (
@@ -22,17 +21,11 @@ export default async function (
   _opts: FastifyPluginOptions,
   done: (err?: Error) => void
 ) {
-  instance.get<{ Querystring: TvlByChainQueryString }>(
+  instance.get<{ Querystring: TvlByChainsQueryString }>(
     '/',
-    { schema: tvlByChainSchema },
+    { schema: tvlByChainsSchema },
     async (request, reply) => {
-      const chain_id = await getChainId(request.query.chain.toLocaleLowerCase());
-      if (!chain_id) {
-        reply.status(404);
-        return { error: `${request.query.chain} Not Found` };
-      }
-
-      const result = await getChainTvls(chain_id, request.query.bucket);
+      const result = await getTvlForAllChains(request.query.bucket);
       reply.header('cache-control', 'public, max-age=300, stale-if-error=3600');
 
       return result;
