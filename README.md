@@ -173,12 +173,11 @@ as above for prices
 
 as above for prices
 
-
-### Tvl by Chains
+### Tvl by Chain
 
 #### Url
 
-`/api/v2/tvlByChains?chain={chainId}&bucket={bucket}`
+`/api/v2/tvlByChain?chain={chainId}&bucket={bucket}`
 
 #### Query string
 
@@ -192,12 +191,34 @@ as above for prices
 [
   {
     "t": 1671244200,
-    "total_tvl": 100000000,
-    "clm_tvl": 50000000,
-    "vault_tvl": 30000000,
-    "gov_tvl": 20000000,
+    "total": 100000000,
+    "vault": 30000000,
+    "gov": 20000000,
+    "clm": 50000000
   }
 ]
+```
+
+### Tvl by Chains
+
+#### Url
+
+`/api/v2/tvlByChains?bucket={bucket}`
+
+#### Query string
+
+`bucket` - as above
+
+### Response
+
+```json
+{
+  "fields" : ["t", "total", "vault", "gov", "clm"],
+  "data" : {
+    "arbitrum": [[1671244200,100000000,30000000,20000000,50000000],[1671244200,100000000,30000000,20000000,50000000]],
+    ... , // all chain ids
+  }
+}
 ```
 
 ## Migrations
