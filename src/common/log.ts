@@ -1,7 +1,7 @@
-import pino, { type Logger, type LoggerOptions } from 'pino';
-import pinoPretty from 'pino-pretty';
 import { NODE_ENV } from './config.js';
+import pino, { type Logger, type LoggerOptions } from 'pino';
 
+const pinoPretty = NODE_ENV === 'development' ? (await import('pino-pretty')).default : undefined;
 const validLevels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'];
 const defaultLevel = 'info';
 const LOG_LEVEL =
@@ -17,7 +17,7 @@ export function createDefaultLogger(name: string) {
     level: LOG_LEVEL,
   };
 
-  if (NODE_ENV === 'development') {
+  if (pinoPretty) {
     // pretty sync mode in dev so pino output is correct order with other output to stdout
     return pino(options, pinoPretty({ sync: true }));
   }
