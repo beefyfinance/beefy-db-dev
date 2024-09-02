@@ -1,9 +1,15 @@
 import fetch from 'node-fetch';
-import type { ApyResponse, LpBreakdownResponse, PriceResponse, TvlResponse } from './types.js';
+import type {
+  ApyResponse,
+  LpBreakdownResponse,
+  PriceResponse,
+  TvlResponse,
+  VaultResponse,
+} from './types.js';
 
 async function get<T>(path: string, cacheBuster: string): Promise<T> {
   const response = await fetch(`https://api.beefy.finance/${path}?_=${cacheBuster}`);
-  return response.json() as T;
+  return (await response.json()) as T;
 }
 
 export async function getApys(cacheBuster: string): Promise<ApyResponse> {
@@ -24,4 +30,16 @@ export async function getLpBreakdown(cacheBuster: string): Promise<LpBreakdownRe
 
 export async function getTvls(cacheBuster: string): Promise<TvlResponse> {
   return await get<TvlResponse>('tvl', cacheBuster);
+}
+
+export async function getVaults(cacheBuster: string): Promise<VaultResponse> {
+  return await get<VaultResponse>('vaults', cacheBuster);
+}
+
+export async function getGovVaults(cacheBuster: string): Promise<VaultResponse> {
+  return await get<VaultResponse>('gov-vaults', cacheBuster);
+}
+
+export async function getCowVaults(cacheBuster: string): Promise<VaultResponse> {
+  return await get<VaultResponse>('cow-vaults', cacheBuster);
 }
