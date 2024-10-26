@@ -37,8 +37,8 @@
     "dev:infra:start": "docker compose -f docker-compose.dev.yaml up -d",
     "dev:infra:stop": "docker compose -f docker-compose.dev.yaml down",
     "dev:pg:console": "docker exec -it beefy-db-dev-db-dev-1 psql -U beefy-db-dev",
-    "prettier:check": "prettier --check src/**/*.{ts,tsx,json}",
-    "prettier:fix": "prettier --write src/**/*.{ts,tsx,json}",
+    "prettier:check": "prettier --check ./src/**/*.ts",
+    "prettier:fix": "prettier --write ./src/**/*.ts",
     "package:check": "ncu",
     "package:fix": "ncu -u && yarn"
   },
