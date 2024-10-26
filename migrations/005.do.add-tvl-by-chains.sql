@@ -43,7 +43,6 @@ VALUES (1, 'bsc'),
        (30, 'sei')
 ;
 
-ALTER SEQUENCE chain_ids_id_seq RESTART WITH 31;
 -- Create table to store TVL by chain over time
 CREATE TABLE tvl_by_chain
 (
