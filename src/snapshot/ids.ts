@@ -70,9 +70,7 @@ export async function updatePriceOracleRows(
   const existingMap = await getPriceOraclesRows();
   const newOracleRows = uniqBy(oracleData, r => r.oracle_id).filter(r => !existingMap[r.oracle_id]);
 
-  // we temporarily need to update existing rows in the database
-  // to add the tokens field
-  // TODO: remove that bit after the next snapshot
+  // update the breakdown tokens
   const rowsToUpdate = oracleData
     .map(r => {
       const existingRow = existingMap[r.oracle_id];
