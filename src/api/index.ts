@@ -7,6 +7,7 @@ import FastifyCors from '@fastify/cors';
 import { API_CORS_ORIGIN, API_PORT, API_RANGE_KEY, NODE_ENV } from '../common/config.js';
 import routes from './routes/index.js';
 import { logger } from './logger.js';
+import FastifyBlocklist from './plugins/blocklist.js';
 import type { RangePricesQueryString } from './routes/prices.js';
 
 const server = Fastify({
@@ -16,6 +17,14 @@ const server = Fastify({
 
 server.register(async (instance, _opts, done) => {
   instance
+    .register(FastifyBlocklist, {
+      blocklist: [
+        // calling /api/v2/prices without any query params, causing errors and log flooding
+        // without any respect for the rate limit response headers
+        // if that's you, fix your code and make a PR to remove yourself from the list
+        '96.231.50.46',
+      ],
+    })
     .register(FastifyUnderPressure)
     .register(FastifyHelmet, { contentSecurityPolicy: NODE_ENV === 'production' })
     .register(FastifyRateLimit, {
