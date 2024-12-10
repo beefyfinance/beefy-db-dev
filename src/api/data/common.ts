@@ -27,7 +27,7 @@ export async function getEntries(
   const pool = getPool();
 
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
-                        max(val)                                         as v
+                        avg(val)                                         as v
                  FROM ${table}
                  WHERE ${column} = $1
                    AND t BETWEEN $2 AND $3
