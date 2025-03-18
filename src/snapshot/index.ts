@@ -1,7 +1,11 @@
 import { logger } from './logger.js';
-import { performScheduledUpdate, performUpdateWithRetries } from './update.js';
+import {
+  performRefreshWithRetries,
+  performScheduledUpdate,
+  performUpdateWithRetries,
+} from './update.js';
 import { getLastSnapshot, getNextSnapshot } from './utils.js';
-import { SNAPSHOT_INTERVAL } from '../common/config.js';
+import { SNAPSHOT_INTERVAL, VIEW_REFRESH_INTERVAL } from '../common/config.js';
 
 async function run() {
   logger.info('Starting...');
@@ -26,6 +30,12 @@ async function run() {
     performScheduledUpdate();
   }, waitSeconds * 1000);
 
+  setTimeout(async () => {
+    // refresh on interval
+    scheduleViewRefresh();
+    await performRefreshWithRetries();
+  }, 60 * 1000);
+
   // perform a snapshot now if we missed one and next is more than 1 minute away
   if (nextSnapshot > lastSnapshot && waitSeconds > 60) {
     // update on startup
@@ -37,6 +47,11 @@ async function run() {
 function scheduleUpdate() {
   logger.info('Scheduling update every %ds', SNAPSHOT_INTERVAL);
   setInterval(performScheduledUpdate, SNAPSHOT_INTERVAL * 1000);
+}
+
+function scheduleViewRefresh() {
+  logger.info('Scheduling materialized view refresh every %ds', VIEW_REFRESH_INTERVAL);
+  setInterval(performRefreshWithRetries, VIEW_REFRESH_INTERVAL * 1000);
 }
 
 run().catch(e => {

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifySchema } from 'fastify';
-import { getApys } from '../data/apys.js';
+import { getApys, getAvgApys } from '../data/apys.js';
 import S from 'fluent-json-schema';
 import { getVaultId } from '../data/common.js';
 import { TIME_BUCKETS, TimeBucket } from '../data/timeBuckets.js';
@@ -38,6 +38,12 @@ export default async function (
       return result;
     }
   );
+
+  instance.get('/avg', async (_, reply) => {
+    const result = await getAvgApys();
+    reply.header('cache-control', 'public, max-age=300, stale-if-error=3600');
+    return result;
+  });
 
   done();
 }

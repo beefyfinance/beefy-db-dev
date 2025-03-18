@@ -1,7 +1,7 @@
 import { getPool } from '../../common/db.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
-export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chain';
+export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chain' | 'apys_agg_mv';
 export type IdColumn = 'oracle_id' | 'vault_id' | 'chain_id';
 
 export type DataPoint = {
@@ -37,6 +37,13 @@ export async function getEntries(
 
   const result = await pool.query(query, params);
 
+  return result.rows;
+}
+
+export async function getAllEntries(table: Table): Promise<DataPoint[]> {
+  const pool = getPool();
+  const query = `SELECT * FROM ${table} LIMIT ALL`;
+  const result = await pool.query(query);
   return result.rows;
 }
 

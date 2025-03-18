@@ -23,6 +23,8 @@ export const API_CORS_ORIGIN: RegExp = new RegExp(
 );
 export const API_RANGE_KEY: string | undefined = process.env['API_RANGE_KEY'];
 export const SNAPSHOT_INTERVAL: number = getNumberEnv('SNAPSHOT_INTERVAL', 15 * 60);
+export const VIEW_REFRESH_INTERVAL: number = getNumberEnv('VIEW_REFRESH_INTERVAL', 6 * 60 * 60);
 export const SNAPSHOT_RETRY_DELAY: number = getNumberEnv('SNAPSHOT_RETRY_DELAY', 60);
 export const SNAPSHOT_RETRY_MAX: number = getNumberEnv('SNAPSHOT_RETRY_MAX', 5);
+export const REFRESH_RETRY_MAX: number = getNumberEnv('REFRESH_RETRY_MAX', 2);
 export const CLM_API: string = process.env['CLM_API'] || 'https://clm-api.beefy.finance';

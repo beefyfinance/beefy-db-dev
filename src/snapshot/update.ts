@@ -21,7 +21,7 @@ import {
 import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep } from '../common/promise.js';
-import { SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
+import { REFRESH_RETRY_MAX, SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
 import type {
@@ -197,4 +197,42 @@ async function insertTvlByChainData(
       ...val,
     }))
   );
+}
+
+export async function performScheduledRefresh() {
+  performRefreshWithRetries().catch(e => logger.error(e));
+}
+
+export async function performRefreshWithRetries(
+  maxRetries: number = REFRESH_RETRY_MAX,
+  delay: number = SNAPSHOT_RETRY_DELAY
+) {
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      await performRefresh();
+      return;
+    } catch (e) {
+      retries++;
+      logger.error(
+        e,
+        `[%d/%d] Failed to refresh materialized views, retrying in %ds...`,
+        retries,
+        maxRetries,
+        delay
+      );
+      await sleep(delay * 1000);
+    }
+  }
+
+  throw new Error(`Failed to update snapshot after ${maxRetries} retries`);
+}
+
+async function performRefresh() {
+  // Want this function to refresh the materialized view apys_agg_mv
+  const builder = getQueryBuilder();
+  logger.info('Refreshing materialized view apys_agg_mv...');
+  await builder.schema.refreshMaterializedView('apys_agg_mv');
+  logger.info('Materialized view apys_agg_mv refreshed successfully.');
 }
