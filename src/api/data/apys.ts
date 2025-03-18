@@ -17,8 +17,6 @@ export async function getAvgApys(): Promise<DataPoint[]> {
                 JOIN vault_ids AS v
                   ON a.vault_id = v.id
                 LIMIT ALL`;
-  console.log('performing query');
-  console.log(query);
   const result = await pool.query(query);
   return result.rows;
 }
