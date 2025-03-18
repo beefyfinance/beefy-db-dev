@@ -40,13 +40,6 @@ export async function getEntries(
   return result.rows;
 }
 
-export async function getAllEntries(table: Table): Promise<DataPoint[]> {
-  const pool = getPool();
-  const query = `SELECT * FROM ${table} LIMIT ALL`;
-  const result = await pool.query(query);
-  return result.rows;
-}
-
 export async function getOracleId(oracle: string): Promise<number | undefined> {
   const pool = getPool();
   const result = await pool.query(

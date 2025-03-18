@@ -1,5 +1,6 @@
+import { getPool } from '../../common/db.js';
 import type { DataPoint } from './common.js';
-import { getAllEntries, getEntries } from './common.js';
+import { getEntries } from './common.js';
 import { TimeBucket } from './timeBuckets.js';
 
 export async function getApys(vault_id: number, bucket: TimeBucket): Promise<DataPoint[]> {
@@ -7,5 +8,17 @@ export async function getApys(vault_id: number, bucket: TimeBucket): Promise<Dat
 }
 
 export async function getAvgApys(): Promise<DataPoint[]> {
-  return getAllEntries('apys_agg_mv');
+  const pool = getPool();
+  const query = `SELECT v.vault_id AS vault_id,
+                      a.avg_7d,
+                      a.avg_30d,
+                      a.avg_90d
+                FROM apys_agg_mv AS a
+                JOIN vault_ids AS v
+                  ON a.vault_id = v.id
+                LIMIT ALL`;
+  console.log('performing query');
+  console.log(query);
+  const result = await pool.query(query);
+  return result.rows;
 }
