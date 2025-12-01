@@ -1,0 +1,1 @@
+-- Do nothing as chains/bifi_buyback/harvests/feebatch_harvests were created outside of migrations

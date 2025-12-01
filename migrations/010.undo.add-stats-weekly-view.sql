@@ -1,0 +1,1 @@
+DROP MATERIALIZED VIEW stats_weekly;

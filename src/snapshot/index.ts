@@ -1,6 +1,7 @@
 import { logger } from './logger.js';
 import {
-  performRefreshWithRetries,
+  performRefreshViews,
+  performScheduledRefresh,
   performScheduledUpdate,
   performUpdateWithRetries,
 } from './update.js';
@@ -30,10 +31,11 @@ async function run() {
     performScheduledUpdate();
   }, waitSeconds * 1000);
 
+  // wait 1 minute and then start view refreshes
   setTimeout(async () => {
     // refresh on interval
     scheduleViewRefresh();
-    await performRefreshWithRetries();
+    await performRefreshViews();
   }, 60 * 1000);
 
   // perform a snapshot now if we missed one and next is more than 1 minute away
@@ -51,7 +53,7 @@ function scheduleUpdate() {
 
 function scheduleViewRefresh() {
   logger.info('Scheduling materialized view refresh every %ds', VIEW_REFRESH_INTERVAL);
-  setInterval(performRefreshWithRetries, VIEW_REFRESH_INTERVAL * 1000);
+  setInterval(performScheduledRefresh, VIEW_REFRESH_INTERVAL * 1000);
 }
 
 run().catch(e => {
