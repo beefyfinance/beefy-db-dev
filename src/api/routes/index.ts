@@ -7,6 +7,7 @@ import clmRanges from './clmRanges.js';
 import lpBreakdown from './lpbreakdown.js';
 import tvlByChain from './tvlByChain.js';
 import tvlByChains from './tvlByChains.js';
+import stats from './stats.js';
 
 export default async function (
   instance: FastifyInstance,
@@ -21,5 +22,7 @@ export default async function (
   instance.register(lpBreakdown, { prefix: '/lpBreakdown' });
   instance.register(tvlByChain, { prefix: '/tvlByChain' });
   instance.register(tvlByChains, { prefix: '/tvlByChains' });
+  instance.register(stats, { prefix: '/stats' });
+
   done();
 }

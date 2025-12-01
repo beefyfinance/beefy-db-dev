@@ -20,7 +20,7 @@ import {
 } from './transform.js';
 import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
-import { sleep } from '../common/promise.js';
+import { sleep, withRetries } from '../common/promise.js';
 import { REFRESH_RETRY_MAX, SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
@@ -200,39 +200,45 @@ async function insertTvlByChainData(
 }
 
 export async function performScheduledRefresh() {
-  performRefreshWithRetries().catch(e => logger.error(e));
+  performRefreshViews().catch(e => logger.error(e));
 }
 
-export async function performRefreshWithRetries(
-  maxRetries: number = REFRESH_RETRY_MAX,
-  delay: number = SNAPSHOT_RETRY_DELAY
-) {
-  let retries = 0;
+export async function performRefreshViews() {
+  const results = await Promise.allSettled([performAvgApyViewRefresh(), performStatsViewRefresh()]);
 
-  while (retries < maxRetries) {
-    try {
-      await performRefresh();
-      return;
-    } catch (e) {
-      retries++;
-      logger.error(
-        e,
-        `[%d/%d] Failed to refresh materialized views, retrying in %ds...`,
-        retries,
-        maxRetries,
-        delay
-      );
-      await sleep(delay * 1000);
+  const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (rejected.length > 0) {
+    for (const result of rejected) {
+      logger.error(result.reason, 'Error refreshing materialized view');
     }
+    throw new Error(`${rejected.length} materialized view refreshes failed`);
   }
-
-  throw new Error(`Failed to update snapshot after ${maxRetries} retries`);
 }
 
-async function performRefresh() {
-  // Want this function to refresh the materialized view apys_agg_mv
-  const builder = getQueryBuilder();
-  logger.info('Refreshing materialized view apys_agg_mv...');
-  await builder.schema.refreshMaterializedView('apys_agg_mv');
-  logger.info('Materialized view apys_agg_mv refreshed successfully.');
-}
+const performAvgApyViewRefresh = withRetries(
+  async () => {
+    const builder = getQueryBuilder();
+    logger.info('Refreshing materialized view apys_agg_mv...');
+    await builder.schema.refreshMaterializedView('apys_agg_mv');
+    logger.info('Materialized view apys_agg_mv refreshed successfully.');
+  },
+  {
+    action: 'refresh materialized view apys_agg_mv',
+    maxRetries: REFRESH_RETRY_MAX,
+    delayMs: SNAPSHOT_RETRY_DELAY * 1000,
+  }
+);
+
+const performStatsViewRefresh = withRetries(
+  async () => {
+    const builder = getQueryBuilder();
+    logger.info('Refreshing materialized view stats_weekly...');
+    await builder.schema.refreshMaterializedView('stats_weekly');
+    logger.info('Materialized view stats_weekly refreshed successfully.');
+  },
+  {
+    action: 'refresh materialized view stats_weekly',
+    maxRetries: REFRESH_RETRY_MAX,
+    delayMs: SNAPSHOT_RETRY_DELAY * 1000,
+  }
+);
