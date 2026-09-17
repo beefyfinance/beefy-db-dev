@@ -4,7 +4,15 @@ import FastifyRateLimit from '@fastify/rate-limit';
 import FastifyUnderPressure from '@fastify/under-pressure';
 import FastifyEtag from '@fastify/etag';
 import FastifyCors from '@fastify/cors';
-import { API_CORS_ORIGIN, API_PORT, API_RANGE_KEY, NODE_ENV } from '../common/config.js';
+import {
+  API_CORS_ORIGIN,
+  API_PORT,
+  API_RANGE_KEY,
+  NODE_ENV,
+  TIGER_API_PREFIX,
+} from '../common/config.js';
+import { isTigerEnabled } from '../common/tiger-db.js';
+import tigerRoutes from './tiger/routes/index.js';
 import routes from './routes/index.js';
 import { logger } from './logger.js';
 import FastifyBlocklist from './plugins/blocklist.js';
@@ -40,6 +48,13 @@ server.register(async (instance, _opts, done) => {
       origin: NODE_ENV === 'production' ? API_CORS_ORIGIN : true,
     })
     .register(routes, { prefix: '/api/v2' })
+    // Tiger Cloud shadow: same routes served from Tiger when TIGER_DATABASE_URL is set
+    .register(async (tiger, _o, next) => {
+      if (isTigerEnabled()) {
+        tiger.register(tigerRoutes, { prefix: TIGER_API_PREFIX });
+      }
+      next();
+    })
     .setErrorHandler((error, _request, reply) => {
       reply.header('cache-control', 'no-cache, no-store, must-revalidate');
       reply.send(error);
