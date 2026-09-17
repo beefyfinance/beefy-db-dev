@@ -24,6 +24,7 @@ import { sleep, withRetries } from '../common/promise.js';
 import { REFRESH_RETRY_MAX, SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
+import { mirrorSnapshotToTiger } from './tiger-mirror.js';
 import type {
   LpBreakdownRecord,
   OracleIdRecord,
@@ -94,6 +95,20 @@ async function performUpdate() {
   });
 
   logger.info('Done.');
+
+  // Tiger Cloud shadow: mirror the same snapshot after the primary commit. Never throws.
+  await mirrorSnapshotToTiger({
+    snapshot: nextSnapshot,
+    priceData,
+    lpData,
+    lbBreakdownData,
+    apyData,
+    tvlData,
+    tvlByChainData,
+    oracleData,
+    vaultIds,
+    chainIds,
+  });
 }
 
 export function performScheduledUpdate() {
