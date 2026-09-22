@@ -29,10 +29,6 @@ export const SNAPSHOT_RETRY_MAX: number = getNumberEnv('SNAPSHOT_RETRY_MAX', 5);
 export const REFRESH_RETRY_MAX: number = getNumberEnv('REFRESH_RETRY_MAX', 2);
 export const CLM_API: string = process.env['CLM_API'] || 'https://clm-api.beefy.finance';
 
-// Plan overrides for the large (id, t) range scans
-export const DB_FORCE_BITMAP_SCANS: boolean = process.env['DB_FORCE_BITMAP_SCANS'] === 'true'; // off by default
-export const DB_SCAN_IO_CONCURRENCY: number = getNumberEnv('DB_SCAN_IO_CONCURRENCY', 128);
-
 // --- Tiger Cloud shadow deployment (temporary, see src/api/tiger and src/snapshot/tiger-mirror.ts) ---
 // When TIGER_DATABASE_URL is set: the API also serves TIGER_API_PREFIX (default /api/tiger) from Tiger, and the snapshot job mirrors
 // every snapshot to Tiger after the primary write. When unset, nothing Tiger-related runs.
