@@ -1,4 +1,5 @@
 import { getPool } from '../../common/db.js';
+import { queryWithScanOverrides } from './planOverrides.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 
 export type Table = 'prices' | 'apys' | 'tvls' | 'lp_breakdowns' | 'tvl_by_chain' | 'apys_agg_mv';
@@ -24,7 +25,6 @@ export async function getEntries(
   bucket: TimeBucket
 ): Promise<DataPoint[]> {
   const { bin, startTimestamp, endTimestamp } = getSnapshotAlignedBucketParams(bucket);
-  const pool = getPool();
 
   const query = `SELECT EXTRACT(EPOCH FROM date_bin($4, t, $2))::integer as t,
                         avg(val::numeric):: double precision                                         as v
@@ -35,9 +35,7 @@ export async function getEntries(
                  ORDER BY t ASC`;
   const params = [id, startTimestamp, endTimestamp, bin];
 
-  const result = await pool.query(query, params);
-
-  return result.rows;
+  return queryWithScanOverrides<DataPoint>(query, params);
 }
 
 export async function getOracleId(oracle: string): Promise<number | undefined> {
