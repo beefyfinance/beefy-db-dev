@@ -1,5 +1,6 @@
 import { getPool, unixToTimestamp } from '../../common/db.js';
 import { type DataPoint, getEntries } from './common.js';
+import { queryWithScanOverrides } from './planOverrides.js';
 import { getSnapshotAlignedBucketParams, TimeBucket } from './timeBuckets.js';
 import { invert } from 'lodash-es';
 import { getChainIds } from '../../snapshot/ids.js';
@@ -13,8 +14,6 @@ export async function getRangeTvls(
   from: number,
   to: number
 ): Promise<DataPoint[]> {
-  const pool = getPool();
-
   const query = `SELECT EXTRACT(EPOCH FROM t)::integer as t, val as v
                  FROM tvls
                  WHERE vault_id = $1
@@ -22,9 +21,7 @@ export async function getRangeTvls(
                  ORDER BY t ASC`;
   const params = [vault_id, unixToTimestamp(from), unixToTimestamp(to)];
 
-  const result = await pool.query(query, params);
-
-  return result.rows;
+  return queryWithScanOverrides<DataPoint>(query, params);
 }
 
 interface TvlByChainDataPoint {
