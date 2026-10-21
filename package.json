@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "^18.16.0"
+    "node": "^24.22.1"
   },
   "dependencies": {
     "@fastify/cors": "^8.3.0",
@@ -46,7 +46,7 @@
     "src/**/*.{ts,tsx,json}": "prettier --write"
   },
   "devDependencies": {
-    "@types/node": "^18.15.3",
+    "@types/node": "^24.0.0",
     "@types/pg": "^8.10.2",
     "dotenv": "^16.2.0",
     "husky": "^8.0.3",
