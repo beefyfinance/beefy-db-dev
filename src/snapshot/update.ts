@@ -24,7 +24,7 @@ import { sleep, withRetries } from '../common/promise.js';
 import { REFRESH_RETRY_MAX, SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
-import { mirrorSnapshotToTiger } from './tiger-mirror.js';
+import { mirrorSnapshotToTiger, refreshTigerViews } from './tiger-mirror.js';
 import type {
   LpBreakdownRecord,
   OracleIdRecord,
@@ -219,7 +219,12 @@ export async function performScheduledRefresh() {
 }
 
 export async function performRefreshViews() {
-  const results = await Promise.allSettled([performAvgApyViewRefresh(), performStatsViewRefresh()]);
+  const results = await Promise.allSettled([
+    performAvgApyViewRefresh(),
+    performStatsViewRefresh(),
+    // Tiger Cloud shadow: never throws, so it can't add to the rejected count below
+    refreshTigerViews(),
+  ]);
 
   const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
   if (rejected.length > 0) {
