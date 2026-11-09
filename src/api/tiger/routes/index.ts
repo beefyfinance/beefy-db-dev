@@ -1,5 +1,5 @@
-// Same routes as ../../routes/index.ts, served from Tiger. stats (stats_weekly) and clmRanges (no DB) reuse
-// the primary implementations so this prefix is a complete drop-in for the app.
+// Same routes as ../../routes/index.ts, served from Tiger. clmRanges (no DB) reuses
+// the primary implementation so this prefix is a complete drop-in for the app.
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import apys from './apys.js';
 import ranges from './ranges.js';
@@ -9,7 +9,7 @@ import lpBreakdown from './lpbreakdown.js';
 import tvlByChain from './tvlByChain.js';
 import tvlByChains from './tvlByChains.js';
 import clmRanges from '../../routes/clmRanges.js';
-import stats from '../../routes/stats.js';
+import stats from './stats.js';
 
 export default async function (
   instance: FastifyInstance,
