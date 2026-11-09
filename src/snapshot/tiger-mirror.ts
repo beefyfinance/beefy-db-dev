@@ -182,3 +182,18 @@ async function refreshAggregates() {
   );
   await pool.query('REFRESH MATERIALIZED VIEW CONCURRENTLY apys_agg_mv');
 }
+
+// stats_weekly scans a year of harvests/buybacks, so it runs on the primary's view-refresh interval rather than
+// after every snapshot.
+// Never throws, so it cannot affect the primary refresh.
+export async function refreshTigerViews(): Promise<void> {
+  if (!isTigerEnabled()) return;
+  const started = Date.now();
+  try {
+    // plain (not CONCURRENTLY) refresh, same as primary: stats_weekly has no unique index
+    await getTigerPool().query('REFRESH MATERIALIZED VIEW stats_weekly');
+    logger.info('Refreshed stats_weekly on Tiger in %dms', Date.now() - started);
+  } catch (e) {
+    logger.error(e, 'Failed to refresh stats_weekly on Tiger (primary is unaffected)');
+  }
+}
