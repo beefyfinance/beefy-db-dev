@@ -1,21 +1,23 @@
 import { SNAPSHOT_INTERVAL } from '../common/config.js';
-import { getQueryBuilder } from '../common/db.js';
+import { getPool } from '../common/db.js';
 import type { TupleToObject } from './type-utils.js';
 
 export async function getLastSnapshot() {
-  const builder = await getQueryBuilder();
-  const result = await builder.table('prices').max('t');
+  // Every table gets its rows in the same transaction, so the smallest one answers for all of them. The time
+  // bound keeps the scan to the newest chunks: there is no index on t alone.
+  const result = await getPool().query<{ max: Date | null }>(
+    `SELECT max(t) AS max
+     FROM tvl_by_chain
+     WHERE t > now() - INTERVAL '7 days'`
+  );
 
-  if (!result || result.length !== 1 || !result[0] || !('max' in result[0])) {
-    throw new Error('Could not get last snapshot');
-  }
-
-  // db is empty
-  if (!result[0]['max']) {
+  // nothing in the last week, or an empty db: a snapshot is due either way
+  const max = result.rows[0]?.max;
+  if (!max) {
     return 0;
   }
 
-  return result[0]['max'].getTime() / 1000;
+  return max.getTime() / 1000;
 }
 
 export function getNextSnapshot() {

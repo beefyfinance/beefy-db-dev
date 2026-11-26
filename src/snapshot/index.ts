@@ -1,6 +1,5 @@
 import { logger } from './logger.js';
 import {
-  performRefreshViews,
   performScheduledRefresh,
   performScheduledUpdate,
   performUpdateWithRetries,
@@ -32,10 +31,11 @@ async function run() {
   }, waitSeconds * 1000);
 
   // wait 1 minute and then start view refreshes
-  setTimeout(async () => {
+  setTimeout(() => {
     // refresh on interval
     scheduleViewRefresh();
-    await performRefreshViews();
+    // a failed refresh is logged, it must not stop the snapshots
+    performScheduledRefresh();
   }, 60 * 1000);
 
   // perform a snapshot now if we missed one and next is more than 1 minute away

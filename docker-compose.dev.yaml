@@ -2,7 +2,8 @@ version: '3.9' # optional since v1.27.0
 
 services:
   db-dev:
-    image: postgres:14.8-alpine
+    # same Postgres and TimescaleDB versions as production; the image installs the extension in the database
+    image: timescale/timescaledb:2.32.1-pg18
     command: postgres -c logging_collector=off -c log_min_duration_statement=1s -c log_statement=none -c max_locks_per_transaction=500
     env_file: .env
     stop_signal: SIGINT
@@ -10,6 +11,7 @@ services:
       - '5432:5432'
     environment:
       TZ: 'UTC'
+      TIMESCALEDB_TELEMETRY: 'off'
       POSTGRES_PORT: 5432
       POSTGRES_USER: beefy-db-dev
       POSTGRES_PASSWORD: beefy-db-dev

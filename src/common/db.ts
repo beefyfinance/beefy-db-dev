@@ -4,11 +4,16 @@ import {
   DATABASE_MAX_POOL_SIZE,
   DATABASE_MIN_POOL_SIZE,
   DATABASE_SSL,
+  DATABASE_STATEMENT_TIMEOUT,
   DATABASE_URL,
+  DATABASE_URL_SOURCE,
 } from './config.js';
 import createKnex, { Knex } from 'knex';
 import PgConnectionConfig = Knex.PgConnectionConfig;
 import { format, fromUnixTime } from 'date-fns';
+import { getLoggerFor } from './log.js';
+
+const logger = getLoggerFor('db');
 
 const pgTimestampWithTzFormat = 'yyyy-MM-dd HH:mm:ssxx';
 
@@ -37,16 +42,28 @@ export function createClientConfig(): ClientConfig {
   }
 
   return {
-    connectionString: process.env['DATABASE_URL'],
+    connectionString: DATABASE_URL,
     ssl,
+  };
+}
+
+/** For the pools only: a statement that hangs must not hold a request or a snapshot forever. */
+function createPooledClientConfig(): ClientConfig {
+  return {
+    ...createClientConfig(),
+    statement_timeout: DATABASE_STATEMENT_TIMEOUT * 1000,
+    keepAlive: true,
   };
 }
 
 export function createPoolConfig(): PoolConfig {
   return {
-    ...createClientConfig(),
+    ...createPooledClientConfig(),
     min: DATABASE_MIN_POOL_SIZE,
     max: DATABASE_MAX_POOL_SIZE,
+    // keep connections open between request bursts, and give up on a connection attempt after 10s
+    idleTimeoutMillis: 10 * 60 * 1000,
+    connectionTimeoutMillis: 10_000,
   };
 }
 
@@ -55,7 +72,11 @@ export function createClient(): pg.Client {
 }
 
 function createPool(): pg.Pool {
-  return new pg.Pool(createPoolConfig());
+  logger.info('Using the database in %s', DATABASE_URL_SOURCE);
+  const pool = new pg.Pool(createPoolConfig());
+  // an idle connection dropped by the server must not take the process down
+  pool.on('error', e => logger.warn(e, 'Idle database connection failed'));
+  return pool;
 }
 
 let pool: pg.Pool | undefined;
@@ -71,7 +92,7 @@ export function getPool() {
 function createQueryBuilder() {
   return createKnex({
     client: 'pg',
-    connection: createClientConfig() as unknown as PgConnectionConfig,
+    connection: createPooledClientConfig() as unknown as PgConnectionConfig,
     pool: { min: DATABASE_MIN_POOL_SIZE, max: DATABASE_MAX_POOL_SIZE },
   });
 }

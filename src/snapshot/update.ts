@@ -18,13 +18,12 @@ import {
   transformTvl,
   transformVaultsTvlToTvlByChain,
 } from './transform.js';
-import { getQueryBuilder, unixToTimestamp } from '../common/db.js';
+import { getPool, getQueryBuilder, unixToTimestamp } from '../common/db.js';
 import type { Knex } from 'knex';
 import { sleep, withRetries } from '../common/promise.js';
 import { REFRESH_RETRY_MAX, SNAPSHOT_RETRY_DELAY, SNAPSHOT_RETRY_MAX } from '../common/config.js';
 import { PriceOracleRow, updateChainIds, updatePriceOracleRows, updateVaultIds } from './ids.js';
 import { LpBreakdown, type TvlBreakdownByChain } from './beefy-api/types.js';
-import { mirrorSnapshotToTiger, refreshTigerViews } from './tiger-mirror.js';
 import type {
   LpBreakdownRecord,
   OracleIdRecord,
@@ -96,19 +95,27 @@ async function performUpdate() {
 
   logger.info('Done.');
 
-  // Tiger Cloud shadow: mirror the same snapshot after the primary commit. Never throws.
-  await mirrorSnapshotToTiger({
-    snapshot: nextSnapshot,
-    priceData,
-    lpData,
-    lbBreakdownData,
-    apyData,
-    tvlData,
-    tvlByChainData,
-    oracleData,
-    vaultIds,
-    chainIds,
-  });
+  await refreshApyAggregates();
+}
+
+/**
+ * apys_daily is a continuous aggregate (only the days that received rows are recomputed) and apys_agg_mv is a
+ * small materialized view over it, so both are cheap enough to refresh after every snapshot.
+ * Never throws: the snapshot is already committed, and the next snapshot refreshes again.
+ */
+async function refreshApyAggregates() {
+  const started = Date.now();
+  try {
+    // straight on the pool: refresh_continuous_aggregate can not run inside a transaction
+    const pool = getPool();
+    await pool.query(
+      `CALL refresh_continuous_aggregate('apys_daily', now() - INTERVAL '2 days', now() + INTERVAL '1 day')`
+    );
+    await pool.query('REFRESH MATERIALIZED VIEW CONCURRENTLY apys_agg_mv');
+    logger.info('Refreshed apys_daily and apys_agg_mv in %dms', Date.now() - started);
+  } catch (e) {
+    logger.error(e, 'Failed to refresh apys_daily / apys_agg_mv');
+  }
 }
 
 export function performScheduledUpdate() {
@@ -214,40 +221,10 @@ async function insertTvlByChainData(
   );
 }
 
-export async function performScheduledRefresh() {
-  performRefreshViews().catch(e => logger.error(e));
+/** stats_weekly only: apys_agg_mv is refreshed after every snapshot */
+export function performScheduledRefresh() {
+  performStatsViewRefresh().catch(e => logger.error(e));
 }
-
-export async function performRefreshViews() {
-  const results = await Promise.allSettled([
-    performAvgApyViewRefresh(),
-    performStatsViewRefresh(),
-    // Tiger Cloud shadow: never throws, so it can't add to the rejected count below
-    refreshTigerViews(),
-  ]);
-
-  const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-  if (rejected.length > 0) {
-    for (const result of rejected) {
-      logger.error(result.reason, 'Error refreshing materialized view');
-    }
-    throw new Error(`${rejected.length} materialized view refreshes failed`);
-  }
-}
-
-const performAvgApyViewRefresh = withRetries(
-  async () => {
-    const builder = getQueryBuilder();
-    logger.info('Refreshing materialized view apys_agg_mv...');
-    await builder.schema.refreshMaterializedView('apys_agg_mv');
-    logger.info('Materialized view apys_agg_mv refreshed successfully.');
-  },
-  {
-    action: 'refresh materialized view apys_agg_mv',
-    maxRetries: REFRESH_RETRY_MAX,
-    delayMs: SNAPSHOT_RETRY_DELAY * 1000,
-  }
-);
 
 const performStatsViewRefresh = withRetries(
   async () => {
