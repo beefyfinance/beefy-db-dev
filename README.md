@@ -17,6 +17,9 @@ This app is composed of 2 simple modules:
 1. `snapshot` periodically fetches info from the api and stores it in a database
 2. `api` basic fastify server that allows us to query the stored data
 
+The database is Postgres with the [TimescaleDB](https://github.com/timescale/timescaledb) extension: the time-series
+tables are hypertables with compression (see `migrations/011.do.timescale.sql`).
+
 ## Env
 
 `.env` is automatically loaded when running the app via `yarn dev:*` commands.
@@ -27,7 +30,15 @@ This app is composed of 2 simple modules:
 
 `DATABASE_URL` - postgres connection string
 
+`TIGER_DATABASE_URL` - transitional: when set it is used instead of `DATABASE_URL` (on Heroku the Postgres add-on owns `DATABASE_URL` until it is removed)
+
 `DATABASE_SSL` - false: no SSL, true: SSL, default: SSL allowing self-signed certs
+
+`DATABASE_MAX_POOL_SIZE` - max connections per pool, default: 10 - the api process has one pool and the snapshot process two, keep the total under the connection limit of the database role
+
+`DATABASE_MIN_POOL_SIZE` - min connections kept open by the snapshot process' query builder pool, default: 0
+
+`DATABASE_STATEMENT_TIMEOUT` - seconds before a statement of the api or snapshot process is cancelled, default: 120 (migrations have no timeout)
 
 `PORT` - port to run the api on, default: 4000
 
@@ -39,6 +50,8 @@ This app is composed of 2 simple modules:
 
 `SNAPSHOT_RETRY_MAX` - max number of retries, default: 5 (`SNAPSHOT_RETRY_DELAY * SNAPSHOT_RETRY_MAX` must be less than `SNAPSHOT_INTERVAL`)
 
+`VIEW_REFRESH_INTERVAL` - interval in seconds between refreshes of the `stats_weekly` view, default: 21600 (6 hours) - the APY averages are refreshed after every snapshot
+
 `NODE_ENV` - development / production, default: development - CSP/CORS is disabled when not production
 
 `LOG_LEVEL` - 'fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent', default: 'info' - you may want to set this to warn or above for production
@@ -47,7 +60,9 @@ This app is composed of 2 simple modules:
 
 ### Development
 
-`yarn dev:infra:start` - start postgres via docker-compose
+`yarn dev:infra:start` - start postgres (with TimescaleDB) via docker-compose
+
+`yarn dev:infra:stop` - stop it; the container keeps no volume, so the next start is an empty database
 
 `yarn dev:migrate` - run database migrations via ts-node
 
@@ -82,6 +97,8 @@ Logging is handled by [pino](https://github.com/pinojs/pino)
 Pino outputs logs in JSON format to stdout. In development this is then piped to [pino-pretty](https://github.com/pinojs/pino-pretty) for pretty printing.
 
 ## Endpoints
+
+Every endpoint is also served under `/api/tiger` instead of `/api/v2`, with the same parameters and responses.
 
 ### Ranges
 
@@ -224,3 +241,7 @@ as above for prices
 ## Migrations
 
 Database migrations are handled by [postgrator](https://github.com/rickbergfalk/postgrator) and are available in `/migrations/`
+
+Migration 011 needs the TimescaleDB extension to be installed in the database and fails without it; it does not install it. The dev docker-compose image installs it. A local database created before 011 on plain Postgres has to be recreated (`yarn dev:infra:stop`, `yarn dev:infra:start`, `yarn dev:migrate`).
+
+After loading history in bulk into an empty database, run `CALL refresh_continuous_aggregate('apys_daily', NULL, NULL);` once: the refresh policy only looks at the last days.

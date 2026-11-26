@@ -1,6 +1,6 @@
 -- TimescaleDB layer for the time-series tables: hypertables, compression, the apys_daily aggregate and apys_agg_mv.
--- Every piece is skipped when it already exists, and everything is skipped when TimescaleDB is not installed
--- (the extension is never installed from here). One statement, so a failure leaves nothing behind.
+-- Every piece is skipped when it already exists. Fails when TimescaleDB is not installed in the database (the
+-- extension is never installed from here). One statement, so a failure leaves nothing behind.
 DO
 $migration$
 DECLARE
@@ -15,8 +15,8 @@ DECLARE
     i           int;
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_extension WHERE extname = 'timescaledb') THEN
-        RAISE NOTICE '011: TimescaleDB is not installed in this database, nothing to do';
-        RETURN;
+        RAISE EXCEPTION '011: TimescaleDB is not installed in this database'
+            USING HINT = 'Install the extension first (CREATE EXTENSION timescaledb), then run the migrations again.';
     END IF;
 
     -- 1. Hypertables: 30-day chunks, compressed after 35 days

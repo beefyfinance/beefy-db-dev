@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import Postgrator from 'postgrator';
 import { createClient } from '../common/db.js';
 import { getLoggerFor } from '../common/log.js';
-import { NODE_ENV } from '../common/config.js';
+import { DATABASE_URL_SOURCE, NODE_ENV } from '../common/config.js';
 
 const logger = getLoggerFor('migrate:undo');
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
@@ -21,6 +21,7 @@ async function undoMigrate() {
     throw new Error('DATABASE_URL did not have a database name');
   }
 
+  logger.info('Using the database in %s', DATABASE_URL_SOURCE);
   logger.debug('Connecting to database...');
   await client.connect();
 
